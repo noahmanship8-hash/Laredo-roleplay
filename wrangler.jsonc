@@ -1,5 +1,2 @@
-{
-  "name": "laredorp",
-  "pages_build_output_dir": ".",
-  "compatibility_date": "2026-10-18"
-}
+// wrangler.jsonc
+"name": "laredo-roleplay",

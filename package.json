@@ -1,0 +1,9 @@
+{
+  "name": "laredo-roleplay-site",
+  "private": true,
+  "type": "module",
+  "version": "2.0.0",
+  "scripts": {
+    "test": "node --test tests/api.test.mjs tests/frontend.test.mjs"
+  }
+}

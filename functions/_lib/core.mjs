@@ -222,23 +222,42 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = pr
     : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(id) >> 22n) % 6n)}.png`;
 
   // ------------------------------------------------------------ discord roles (checked live)
-  async function getMember(uid) {
-    const hit = memberCache.get(uid);
-    if (hit && now() - hit.at < 45000) return hit.value;
-    if (!env.DISCORD_BOT_TOKEN) throw new HttpError(500, 'The bot token is not set up on the server.');
-    const res = await fetchImpl(`https://discord.com/api/v10/guilds/${guildId}/members/${uid}`, {
-      headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN }
-    });
-    let value = null;
-    if (res.status === 404) value = null;
-    else if (!res.ok) throw new HttpError(502, 'Could not check your Discord roles right now. Try again in a minute.');
-    else {
-      const m = await res.json();
-      value = { roles: Array.isArray(m.roles) ? m.roles : [] };
-    }
-    memberCache.set(uid, { at: now(), value });
-    return value;
+async function getMember(uid) {
+  const hit = memberCache.get(uid);
+  if (hit && now() - hit.at < 45000) return hit.value;
+  if (!env.DISCORD_BOT_TOKEN) {
+    throw new HttpError(500, 'The bot token is not set up on the server.');
   }
+
+  const res = await fetchImpl(`https://discord.com/api/v10/guilds/${guildId}/members/${uid}`, {
+    headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN }
+  });
+
+  let value = null;
+  if (res.status === 404) {
+    const detail = await res.json().catch(() => ({}));
+    if (detail.code === 10004) {
+      throw new HttpError(502, 'Discord could not find the configured server. Check DISCORD_GUILD_ID and make sure this bot is in that server.');
+    }
+  } else if (!res.ok) {
+    if (res.status === 401) {
+      throw new HttpError(502, 'Discord rejected DISCORD_BOT_TOKEN. Check that it is the current Bot Token, then redeploy.');
+    }
+    if (res.status === 403) {
+      throw new HttpError(502, 'Discord denied this bot access to the server. Make sure the bot is installed in the server set by DISCORD_GUILD_ID.');
+    }
+    if (res.status === 429) {
+      throw new HttpError(502, 'Discord is temporarily rate-limiting the role check. Wait a minute and try again.');
+    }
+    throw new HttpError(502, `Discord role check failed (HTTP ${res.status}). Check DISCORD_BOT_TOKEN and DISCORD_GUILD_ID.`);
+  } else {
+    const m = await res.json();
+    value = { roles: Array.isArray(m.roles) ? m.roles : [] };
+  }
+
+  memberCache.set(uid, { at: now(), value });
+  return value;
+}
 
   function sessionFrom(req) {
     return verify(parseCookies(req.headers.get('cookie')).lr_session);

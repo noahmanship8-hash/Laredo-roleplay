@@ -1,8 +1,5 @@
 {
   "name": "laredo-roleplay",
-  "compatibility_date": "2026-10-19",
-  "assets": {
-    "directory": ".",
-    "not_found_handling": "single-page-application"
-  }
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-10-19"
 }

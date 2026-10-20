@@ -158,14 +158,19 @@ const put = (src, needle, value) => {
   if (!src.includes(needle)) throw new Error('build-preview: anchor missing: ' + needle.slice(0, 48));
   return src.replace(needle, () => value);
 };
+// The same, but tolerant of the ?v= cache-busting suffix on the asset URLs.
+const putRe = (src, re, value) => {
+  if (!re.test(src)) throw new Error('build-preview: anchor missing: ' + String(re));
+  return src.replace(re, () => value);
+};
 
 const logoUrl = `data:image/png;base64,${logo}`;
-html = put(html, '<link rel="stylesheet" href="styles.css">', '<style>\n' + css + '\n</style>');
+html = putRe(html, /<link rel="stylesheet" href="styles\.css[^"]*">/, '<style>\n' + css + '\n</style>');
 html = put(html, '<link rel="icon" href="assets/logo.png">', `<link rel="icon" href="${logoUrl}">`);
 html = html.split('src="assets/logo.png"').join(`src="${logoUrl}"`);
 html = html.split('href="assets/logo.png"').join(`href="${logoUrl}"`);
-html = put(html, '<script src="config.js"></script>', '<script>\n' + config + '\n</script>');
-html = put(html, '<script src="site.js"></script>', '<script>\n' + mockScript + '\n</script>\n<script>\n' + site + '\n</script>');
+html = putRe(html, /<script src="config\.js[^"]*"><\/script>/, '<script>\n' + config + '\n</script>');
+html = putRe(html, /<script src="site\.js[^"]*"><\/script>/, '<script>\n' + mockScript + '\n</script>\n<script>\n' + site + '\n</script>');
 html = put(html, '<title>Laredo Roleplay</title>', '<title>Laredo Roleplay — design preview (single file)</title>');
 
 /* ------------------------------------------------------------------ preview chip */

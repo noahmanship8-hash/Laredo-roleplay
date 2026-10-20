@@ -2,3 +2,18 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/styles.css
+  Cache-Control: no-cache
+
+/site.js
+  Cache-Control: no-cache
+
+/config.js
+  Cache-Control: no-cache

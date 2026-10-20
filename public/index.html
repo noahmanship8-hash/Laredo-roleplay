@@ -11,7 +11,18 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="root t-dark" id="root"><div class="bg" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i>
+<div class="root t-dark" id="root">
+<div class="site-intro" id="site-intro" role="region" aria-label="Loading Laredo Roleplay">
+  <div class="intro-card">
+    <span class="intro-logo"><img src="assets/logo.png" alt="Laredo Roleplay"></span>
+    <p class="intro-kicker">Laredo, Texas &middot; ER:LC</p>
+    <p class="intro-title">Laredo Roleplay</p>
+    <p class="intro-caption" id="intro-status" role="status" aria-live="polite">Opening the gates</p>
+    <span class="intro-bar"><i id="intro-fill"></i></span>
+  </div>
+</div>
+<div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+<div class="bg" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i>
   <i class="aurora a1"></i><i class="aurora a2"></i><i class="aurora a3"></i>
   <span class="stars"></span><span class="beams"></span><span class="tree-line"></span>
   <div class="fx" id="fx"></div>
@@ -54,6 +65,11 @@
         <button type="button" role="menuitemradio" data-look="light"><i style="--sw:#F4EFE4"></i><span>Light<em>Paper and ink</em></span></button>
         <button type="button" role="menuitemradio" data-look="halloween"><i style="--sw:#8B5CF6"></i><span>Halloween<em>Orange and purple</em></span></button>
         <button type="button" role="menuitemradio" data-look="christmas"><i style="--sw:#E9B44C"></i><span>Christmas<em>Ice, pine and brass</em></span></button>
+        <p class="look-head look-head-sub">Unlockables</p>
+        <button type="button" role="menuitemradio" data-look="neon" data-needs="pass_neon"><i style="--sw:#FF2BD1"></i><span>Neon Night<em>Magenta and cyan &#183; Neon Pass</em></span><b class="look-lock" aria-hidden="true">Locked</b></button>
+        <button type="button" role="menuitemradio" data-look="dusk" data-needs="pass_dusk"><i style="--sw:#E2714B"></i><span>Desert Dusk<em>Plum and ember &#183; Dusk Pass</em></span><b class="look-lock" aria-hidden="true">Locked</b></button>
+        <button type="button" role="menuitemradio" data-look="emerald" data-needs="pass_emerald"><i style="--sw:#2FD79B"></i><span>Emerald<em>Deep pine and mint &#183; Emerald Pass</em></span><b class="look-lock" aria-hidden="true">Locked</b></button>
+        <button type="button" role="menuitemradio" data-look="vapor" data-needs="pass_vapor"><i style="--sw:#8B7BFF"></i><span>Vapor<em>Violet and teal &#183; Vapor Pass</em></span><b class="look-lock" aria-hidden="true">Locked</b></button>
         <a class="look-more" href="#settings">All settings</a>
       </div>
     </div>
@@ -86,49 +102,47 @@
       <span class="rot" data-only="christmas"><span style="animation-delay:0s">de-icing the lanes.</span><span style="animation-delay:3s">working the night shift.</span><span style="animation-delay:6s">watching the bridge lights.</span></span></p>
     <div class="cta"><a class="btn btn-primary" href="https://discord.gg/dqpUcfUvrt" target="_blank" rel="noopener noreferrer">Join the Discord</a><a class="btn" href="#dashboard">Open the dashboard</a></div>
   </div>
-  <div class="hero-stage" id="hero-media">
-  <div class="hero-slides" id="hero-slides">
-
-    <article class="hero-slide is-on" data-slide="0">
-      <div class="slide-art art-sun" aria-hidden="true"><div class="scene"><svg class="sun" viewBox="0 0 400 400" aria-hidden="true"><defs><clipPath id="sunclip"><circle cx="200" cy="200" r="170"></circle></clipPath></defs><g clip-path="url(#sunclip)"><rect x="0" y="20" width="400" height="100" style="fill:var(--sun1)"></rect><rect x="0" y="120" width="400" height="72" style="fill:var(--sun2)"></rect><rect x="0" y="192" width="400" height="60" style="fill:var(--sun3)"></rect><rect x="0" y="264" width="400" height="44" style="fill:var(--sun4)"></rect><rect x="0" y="322" width="400" height="30" style="fill:var(--sun5)"></rect><rect x="0" y="366" width="400" height="14" style="fill:var(--sun5)"></rect></g></svg></div><svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,120 0,70 50,40 90,62 140,30 200,66 250,36 310,64 360,42 400,60 400,120" style="fill:var(--hill1)"></polygon><polygon points="0,120 0,92 70,70 130,92 190,76 260,100 330,80 400,96 400,120" style="fill:var(--hill2)"></polygon></svg><img class="art-logo" src="assets/logo.png" alt=""></div>
-      <div class="slide-body">
-        <p class="slide-k">Now open</p>
-        <h2 class="slide-t">Open every night</h2>
-        <p class="slide-p">Eight departments, one crossing. Pick a lane and work the shift.</p>
-        <a class="slide-link" href="#departments">See the departments</a>
-      </div>
-      <span class="slide-n" aria-hidden="true">01</span>
+  <aside class="hero-carousel" id="hero-media" aria-roledescription="carousel" aria-label="Inside Laredo Roleplay">
+  <div class="hc-head"><span class="kicker">Inside Laredo Roleplay</span><span class="hc-count" id="crs-count">01 / 04</span></div>
+  <div class="hc-window" id="hero-slides">
+    <article class="hero-slide is-on" data-slide="0" aria-roledescription="slide" aria-label="1 of 4">
+      <div class="hc-meta"><span class="hc-n">01</span><span class="hc-k">Departments</span></div>
+      <h2 class="hc-t">Choose a department</h2>
+      <p class="hc-p">Eight departments, one crossing. Check the openings and find the right Discord to ask about applying.</p>
+      <a class="hc-link" href="#departments">Browse departments <span aria-hidden="true">&#8599;</span></a>
     </article>
-
-    <article class="hero-slide" data-slide="1" aria-hidden="true">
-      <div class="slide-art art-grid" aria-hidden="true"><span class="grid-lines"></span><span class="grid-glow"></span><span class="ring r1"></span><span class="ring r2"></span></div>
-      <div class="slide-body">
-        <p class="slide-k">Hiring</p>
-        <h2 class="slide-t">Join the team</h2>
-        <p class="slide-p">Staff, Discord and server roles. Read the rules, then send yours in.</p>
-        <a class="slide-link" href="#applications">See what is open</a>
-      </div>
-      <span class="slide-n" aria-hidden="true">02</span>
+    <article class="hero-slide" data-slide="1" aria-roledescription="slide" aria-label="2 of 4" aria-hidden="true">
+      <div class="hc-meta"><span class="hc-n">02</span><span class="hc-k">Applications</span></div>
+      <h2 class="hc-t">Apply to join the team</h2>
+      <p class="hc-p">Staff, Discord and server roles. Sign in with Discord and send your application straight through the site.</p>
+      <a class="hc-link" href="#applications">View applications <span aria-hidden="true">&#8599;</span></a>
     </article>
-
-    <article class="hero-slide" data-slide="2" aria-hidden="true">
-      <div class="slide-art art-rings" aria-hidden="true"><span class="orb-ring o-a"></span><span class="orb-ring o-b"></span><span class="orb-ring o-c"></span><span class="art-glow"></span></div>
-      <div class="slide-body">
-        <p class="slide-k">From the Discord</p>
-        <h2 class="slide-t">News, as it lands</h2>
-        <p class="slide-p">Announcements, events and updates, copied from our Discord within minutes.</p>
-        <a class="slide-link" href="#announcements">Read announcements</a>
-      </div>
-      <span class="slide-n" aria-hidden="true">03</span>
+    <article class="hero-slide" data-slide="2" aria-roledescription="slide" aria-label="3 of 4" aria-hidden="true">
+      <div class="hc-meta"><span class="hc-n">03</span><span class="hc-k">Community updates</span></div>
+      <h2 class="hc-t">See what&rsquo;s new</h2>
+      <p class="hc-p">Announcements, events and updates, copied from our Discord a few minutes after they are posted.</p>
+      <a class="hc-link" href="#announcements">Read announcements <span aria-hidden="true">&#8599;</span></a>
     </article>
-
+    <article class="hero-slide" data-slide="3" aria-roledescription="slide" aria-label="4 of 4" aria-hidden="true">
+      <div class="hc-meta"><span class="hc-n">04</span><span class="hc-k">Your account</span></div>
+      <h2 class="hc-t">Your badges, your city</h2>
+      <p class="hc-p">The dashboard shows the live player count, your Discord roles, your applications and the badges you collect.</p>
+      <a class="hc-link" href="#dashboard">Open the dashboard <span aria-hidden="true">&#8599;</span></a>
+    </article>
   </div>
-  <button class="crs-btn prev" type="button" data-crs="prev" aria-label="Previous slide"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-  <button class="crs-btn next" type="button" data-crs="next" aria-label="Next slide"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-  <div class="crs-foot"><div class="crs-dots" role="tablist" aria-label="Slides"><button type="button" role="tab" data-crs-dot="0" aria-label="Slide 1" class="is-on"></button><button type="button" role="tab" data-crs-dot="1" aria-label="Slide 2"></button><button type="button" role="tab" data-crs-dot="2" aria-label="Slide 3"></button></div>
-  <span class="crs-count" id="crs-count">01 / 03</span></div>
-  <span class="crs-bar" aria-hidden="true"><i id="crs-bar"></i></span>
-</div>
+  <div class="hc-foot">
+    <button class="hc-arrow" type="button" data-crs="prev" aria-label="Previous slide">&#8249;</button>
+    <div class="hc-dots" role="group" aria-label="Choose a slide">
+      <button type="button" data-crs-dot="0" aria-label="Show slide 1" aria-pressed="true"></button>
+      <button type="button" data-crs-dot="1" aria-label="Show slide 2" aria-pressed="false"></button>
+      <button type="button" data-crs-dot="2" aria-label="Show slide 3" aria-pressed="false"></button>
+      <button type="button" data-crs-dot="3" aria-label="Show slide 4" aria-pressed="false"></button>
+    </div>
+    <button class="hc-pause" id="crs-pause" type="button" aria-pressed="false">Pause</button>
+    <button class="hc-arrow" type="button" data-crs="next" aria-label="Next slide">&#8250;</button>
+  </div>
+  <span class="hc-bar" aria-hidden="true"><i id="crs-bar"></i></span>
+</aside>
 <div class="road" aria-hidden="true"></div>
 <div class="facts"><div class="wrap facts-grid">
   <div data-reveal><p class="kicker">Open now</p><p class="fact"><span data-open-count>2</span><span class="fact-of"> of 8 departments</span></p></div>
@@ -221,6 +235,8 @@
 <section class="setting-card" data-reveal><h2>Display</h2>
   <div class="setting"><div><h3>Glass effects</h3><p>Frosted, see-through boxes. Turn them off for flat panels, which is easier on older phones.</p></div>
     <div class="seg" role="radiogroup" aria-label="Glass effects" data-pref="glass"><button role="radio" aria-checked="false" data-value="on">On</button><button role="radio" aria-checked="false" data-value="off">Off</button></div></div>
+  <div class="setting"><div><h3>Cursor light</h3><p>A soft glow follows your pointer around the page.</p></div>
+    <div class="seg" role="radiogroup" aria-label="Cursor light" data-pref="cursor"><button role="radio" aria-checked="false" data-value="on">On</button><button role="radio" aria-checked="false" data-value="off">Off</button></div></div>
   <div class="setting"><div><h3>Background effects</h3><p>The soft light, grain and slow movement behind the page.</p></div>
     <div class="seg" role="radiogroup" aria-label="Background effects" data-pref="ambient"><button role="radio" aria-checked="false" data-value="on">On</button><button role="radio" aria-checked="false" data-value="off">Off</button></div></div>
   <div class="setting"><div><h3>Text size</h3><p>Makes everything on the site a little smaller or larger.</p></div>

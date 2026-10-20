@@ -36,7 +36,15 @@ export const INVENTORY = [
   { id: 'winter', name: 'Snowed In', kind: 'grant', rarity: 'rare', hint: 'A winter event award' },
   { id: 'gold_star', name: 'Gold Star', kind: 'grant', rarity: 'rare', hint: 'Handed out by staff for good work' },
   { id: 'neon', name: 'Neon Nameplate', kind: 'grant', rarity: 'epic', hint: 'A staff award' },
-  { id: 'founder', name: 'Founder', kind: 'grant', rarity: 'legendary', hint: 'For the people who built Laredo' }
+  { id: 'founder', name: 'Founder', kind: 'grant', rarity: 'legendary', hint: 'For the people who built Laredo' },
+  // passes are worn in the dashboard and open the collectable looks in the look menu
+  { id: 'pass_neon', name: 'Neon Pass', kind: 'grant', rarity: 'epic', hint: 'Unlocks the Neon Night look' },
+  { id: 'pass_dusk', name: 'Dusk Pass', kind: 'grant', rarity: 'epic', hint: 'Unlocks the Desert Dusk look' },
+  { id: 'pass_emerald', name: 'Emerald Pass', kind: 'grant', rarity: 'epic', hint: 'Unlocks the Emerald look' },
+  { id: 'pass_vapor', name: 'Vapor Pass', kind: 'grant', rarity: 'epic', hint: 'Unlocks the Vapor look' },
+  // auras change the weather across the site while worn
+  { id: 'aurora', name: 'Aurora Aura', kind: 'grant', rarity: 'legendary', hint: 'An animated ring around your avatar' },
+  { id: 'ember', name: 'Ember Aura', kind: 'grant', rarity: 'rare', hint: 'Embers drift with whatever look you use' }
 ];
 
 const INVENTORY_IDS = INVENTORY.map((i) => i.id);

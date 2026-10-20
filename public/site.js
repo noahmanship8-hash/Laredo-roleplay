@@ -338,10 +338,27 @@
   /* --------------------------------------------------------------- preferences */
   var PREF_KEY = 'laredo-prefs';
   var DEFAULT_PREFS = {
-    mode: 'auto', halloween: false, christmas: false, accent: 'sunset', glass: 'on', ambient: 'on',
-    text: 'md', font: 'brand', contrast: 'normal', motion: 'auto', ticker: 'on', carousel: 'on'
+    mode: 'auto', halloween: false, christmas: false, look: '', accent: 'sunset', glass: 'on', ambient: 'on',
+    text: 'md', font: 'brand', contrast: 'normal', motion: 'auto', ticker: 'on', carousel: 'on', cursor: 'on'
   };
-  var THEME_NAMES = { dark: 'Dark', light: 'Light', halloween: 'Halloween', christmas: 'Christmas' };
+  /* Every look the site knows. `needs` is the inventory badge that unlocks it, so a theme is
+     something you collect: the pass badges are handed out by staff or won in events. */
+  var THEMES = [
+    { key: 'dark', name: 'Dark', note: 'Navy and sunset' },
+    { key: 'light', name: 'Light', note: 'Paper and ink' },
+    { key: 'halloween', name: 'Halloween', note: 'Orange and purple' },
+    { key: 'christmas', name: 'Christmas', note: 'Ice, pine and brass' },
+    { key: 'neon', name: 'Neon Night', note: 'Magenta and cyan', needs: 'pass_neon', locked: 'Neon Pass' },
+    { key: 'dusk', name: 'Desert Dusk', note: 'Plum and ember', needs: 'pass_dusk', locked: 'Dusk Pass' },
+    { key: 'emerald', name: 'Emerald', note: 'Deep pine and mint', needs: 'pass_emerald', locked: 'Emerald Pass' },
+    { key: 'vapor', name: 'Vapor', note: 'Violet and teal', needs: 'pass_vapor', locked: 'Vapor Pass' }
+  ];
+  var THEME_KEYS = THEMES.map(function (t) { return t.key; });
+  var THEME_NAMES = {};
+  THEMES.forEach(function (t) { THEME_NAMES[t.key] = t.name; });
+  var LOOK_SWATCHES = { neon: '#FF2BD1', dusk: '#E2714B', emerald: '#2FD79B', vapor: '#8B7BFF' };
+  var THEME_BY_KEY = {};
+  THEMES.forEach(function (t) { THEME_BY_KEY[t.key] = t; });
   var lightQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
   var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   state.hasSavedPrefs = false;
@@ -373,13 +390,28 @@
   }
 
   // Staff can switch a look off for everybody. A saved look that is off falls back politely.
+  function ownedBadgeIds() {
+    var me = state.me;
+    if (!me || !me.inventory || !me.inventory.owned) return [];
+    return me.inventory.owned.map(function (i) { return i.id; });
+  }
+
+  function themeUnlocked(key) {
+    var t = THEME_BY_KEY[key];
+    if (!t || !t.needs) return true;
+    return ownedBadgeIds().indexOf(t.needs) !== -1;
+  }
+
+  /* switched on by staff, and (for the unlockable looks) owned by the visitor */
   function themeAvailable(key) {
     var t = state.settings && state.settings.themes;
-    return !t || t[key] !== false;
+    if (t && t[key] === false) return false;
+    return themeUnlocked(key);
   }
 
   function resolveTheme() {
     var p = state.prefs;
+    if (p.look && themeAvailable(p.look)) return p.look;
     if (p.christmas && themeAvailable('christmas')) return 'christmas';
     if (p.halloween && themeAvailable('halloween')) return 'halloween';
     var light = p.mode === 'light' || (p.mode === 'auto' && Boolean(lightQuery && lightQuery.matches));
@@ -413,7 +445,13 @@
       var key = btn.getAttribute('data-look');
       var on = key === theme;
       btn.setAttribute('aria-checked', on ? 'true' : 'false');
-      if (!themeAvailable(key)) btn.setAttribute('data-off', '1'); else btn.removeAttribute('data-off');
+      var off = state.settings && state.settings.themes && state.settings.themes[key] === false;
+      if (off) btn.setAttribute('data-off', '1'); else btn.removeAttribute('data-off');
+      var locked = !themeUnlocked(key);
+      btn.setAttribute('data-locked', locked ? '1' : '0');
+      btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      var t = THEME_BY_KEY[key];
+      if (t && t.locked) btn.setAttribute('title', locked ? 'Unlock the ' + t.locked + ' in your inventory' : t.name);
       btn.classList.toggle('on', on);
     });
     var note = $('#settings-theme-note');
@@ -433,16 +471,24 @@
   function applyPrefs() {
     var p = state.prefs;
     var theme = resolveTheme();
-    root.classList.remove('t-dark', 't-light', 't-halloween', 't-christmas');
+    root.classList.remove.apply(root.classList, THEME_KEYS.map(function (k) { return 't-' + k; }));
     root.classList.add('t-' + theme);
-    ['accent', 'glass', 'ambient', 'text', 'font', 'contrast', 'ticker', 'motion'].forEach(function (k) { root.setAttribute('data-' + k, p[k]); });
+    ['accent', 'glass', 'ambient', 'text', 'font', 'contrast', 'ticker', 'motion', 'cursor'].forEach(function (k) { root.setAttribute('data-' + k, p[k]); });
+    root.setAttribute('data-badge', (state.me && state.me.inventory && state.me.inventory.equipped) || '');
+    root.setAttribute('data-badge-rarity', (function () {
+      var inv = (state.me && state.me.inventory) || {};
+      var worn = (inv.owned || []).filter(function (i) { return i.id === inv.equipped; })[0];
+      return (worn && worn.rarity) || '';
+    })());
     root.setAttribute('data-carousel', p.carousel);
-    ['dark', 'light', 'halloween', 'christmas'].forEach(function (k) { root.setAttribute('data-theme-' + k, themeAvailable(k) ? 'on' : 'off'); });
+    THEME_KEYS.forEach(function (k) { root.setAttribute('data-theme-' + k, themeAvailable(k) ? 'on' : 'off'); });
     var meta = $('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4EFE4' : theme === 'halloween' ? '#0F0A1C' : theme === 'christmas' ? '#07131A' : '#0A1020');
+    var CHROME = { light: '#F4EFE4', halloween: '#0F0A1C', christmas: '#07131A', neon: '#07060E', dusk: '#170D14', emerald: '#05130F', vapor: '#0B0A1C' };
+    if (meta) meta.setAttribute('content', CHROME[theme] || '#0A1020');
     syncControls();
     restartCarousel();
-    var key = theme + '|' + (motionReduced() ? 'reduce' : 'full') + '|' + state.prefs.ambient;
+    var key = theme + '|' + (motionReduced() ? 'reduce' : 'full') + '|' + state.prefs.ambient +
+      '|' + ((state.me && state.me.inventory && state.me.inventory.equipped) || '');
     if (key !== fxKey) { fxKey = key; buildFx(theme); }
   }
 
@@ -454,18 +500,21 @@
 
   function setTheme(key) {
     var p = state.prefs;
-    if (!themeAvailable(key)) return;
-    if (key === 'dark') { p.mode = 'dark'; p.halloween = false; p.christmas = false; }
-    else if (key === 'light') { p.mode = 'light'; p.halloween = false; p.christmas = false; }
-    else if (key === 'halloween') { p.halloween = true; p.christmas = false; }
-    else if (key === 'christmas') { p.christmas = true; p.halloween = false; }
+    if (!themeAvailable(key)) return false;
+    p.look = key;
+    // the old switches still drive the two seasonal looks, so keep them in step
+    p.mode = key === 'light' ? 'light' : 'dark';
+    p.halloween = key === 'halloween';
+    p.christmas = key === 'christmas';
     savePrefs();
     applyPrefs();
+    return true;
   }
 
   // the look an admin picked for people who have not chosen one themselves
   function applyDefaultLook(value) {
     if (state.hasSavedPrefs) { syncLookMenu(); return; }
+    if (THEME_BY_KEY[value] && themeUnlocked(value)) { setTheme(value); return; }
     state.prefs.mode = value === 'light' ? 'light' : 'dark';
     state.prefs.halloween = value === 'halloween';
     state.prefs.christmas = value === 'christmas';
@@ -492,7 +541,15 @@
     });
     $$('[data-look]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        setTheme(btn.getAttribute('data-look'));
+        var key = btn.getAttribute('data-look');
+        if (!themeUnlocked(key)) {
+          // locked looks explain themselves instead of silently doing nothing
+          var t = THEME_BY_KEY[key] || {};
+          lookNote('Unlock the ' + (t.locked || 'pass') + ' in your inventory, then wear it to open this look.');
+          return;
+        }
+        if (!themeAvailable(key)) { lookNote('Staff have switched that look off for now.'); return; }
+        setTheme(key);
         closeLookMenu();
       });
     });
@@ -605,7 +662,7 @@
   function loadMe(force) {
     if (!meP || force) {
       meP = api('GET', '/me').then(function (me) { state.me = me; }, function () { state.me = { loggedIn: false, offline: true }; })
-        .then(function () { renderAccount(); checkMaintenance(); });
+        .then(function () { renderAccount(); applyPrefs(); checkMaintenance(); });
     }
     return meP;
   }
@@ -1317,7 +1374,12 @@
       themeRow('light', 'Light', 'Paper and ink for daylight.', '#F4EFE4') +
       themeRow('halloween', 'Halloween', 'Orange and purple, bats and a pumpkin.', '#8B5CF6') +
       themeRow('christmas', 'Christmas', 'Ice blue, pine and brass, with snow.', '#E9B44C') +
-      '<div class="field" style="margin-top:14px"><label for="s-theme">Default look for new visitors</label><select id="s-theme"><option value="normal">Dark</option><option value="light">Light</option><option value="halloween">Halloween</option><option value="christmas">Christmas</option></select></div></section>';
+      '<div class="field" style="margin-top:14px"><label for="s-theme">Default look for new visitors</label><select id="s-theme"><option value="normal">Dark</option><option value="light">Light</option><option value="halloween">Halloween</option><option value="christmas">Christmas</option></select></div>' +
+      '<div class="look-key"><p class="dcard-k">Collectable looks</p><p class="muted">These are not on the switch list: a member opens one by earning the pass and wearing it. Hand a pass out from the Members tab.</p>' +
+      THEMES.filter(function (t) { return t.needs; }).map(function (t) {
+        return '<div class="look-key-row"><span class="look-key-sw" style="--sw:' + (LOOK_SWATCHES[t.key] || '#888') + '"></span>' +
+          '<strong>' + esc(t.name) + '</strong><span class="muted">' + esc(t.locked) + '</span></div>';
+      }).join('') + '</div></section>';
 
     html += '<section class="panel"><h2 class="h2">Dashboard wording</h2><p class="muted">What every signed-in member sees at the top of their dashboard.</p>' +
       '<div class="field"><label for="s-dash-kicker">Small line above the title</label><input type="text" id="s-dash-kicker" maxlength="30" value="' + esc(s.dashboard.kicker) + '"></div>' +
@@ -1582,23 +1644,48 @@
 
   /* -------------------------------------------------- seasonal particles */
   var fxKey = '';
+  var FX_BY_THEME = {
+    christmas: { kind: 'round', count: 34, size: [2, 5], speed: [9, 20] },
+    halloween: { kind: 'warm', count: 26, size: [2, 5], speed: [14, 26] },
+    neon: { kind: 'streak', count: 22, size: [6, 16], speed: [7, 16] },
+    dusk: { kind: 'warm', count: 30, size: [2, 5], speed: [16, 30] },
+    emerald: { kind: 'leaf', count: 22, size: [5, 10], speed: [14, 26] },
+    vapor: { kind: 'firefly', count: 18, size: [3, 6], speed: [10, 20] },
+    light: { kind: 'cool', count: 20, size: [2, 4], speed: [18, 30] },
+    dark: { kind: 'cool', count: 24, size: [2, 4], speed: [18, 32] }
+  };
+  /* a worn badge can add its own weather on top of the look */
+  var BADGE_FX = { winter: 'snow', gold_star: 'spark', founder: 'spark', ember: 'warm',
+    aurora: 'spark', pass_emerald: 'leaf', pass_vapor: 'firefly' };
+
+  function fxSpec(theme) {
+    var spec = FX_BY_THEME[theme] || FX_BY_THEME.dark;
+    var worn = state.me && state.me.inventory && state.me.inventory.equipped;
+    var extra = BADGE_FX[worn];
+    if (extra === 'snow') return { kind: 'round', count: 40, size: [2, 5], speed: [9, 18] };
+    if (extra === 'spark') return { kind: 'spark', count: 22, size: [3, 7], speed: [8, 16] };
+    if (extra === 'leaf') return { kind: 'leaf', count: 18, size: [5, 10], speed: [14, 24] };
+    if (extra === 'firefly') return { kind: 'firefly', count: 16, size: [3, 6], speed: [10, 20] };
+    return spec;
+  }
+
   function buildFx(theme) {
     var box = document.getElementById('fx');
     if (!box) return;
     if (state.prefs.ambient === 'off' || motionReduced()) { box.innerHTML = ''; return; }
     var wide = (window.innerWidth || 1200) > 720;
-    var count = wide ? 30 : 16;
-    var warm = theme === 'halloween' || theme === 'dark';
-    var kind = theme === 'christmas' ? 'round' : warm ? 'warm' : 'cool';
+    var spec = fxSpec(theme);
+    var count = wide ? spec.count : Math.round(spec.count * 0.6);
     var html = '';
     for (var i = 0; i < count; i++) {
       var x = (Math.random() * 100).toFixed(2);
-      var size = (Math.random() * 3.2 + 2).toFixed(1);
-      var dur = (Math.random() * 14 + (theme === 'christmas' ? 9 : 14)).toFixed(1);
+      var size = (Math.random() * (spec.size[1] - spec.size[0]) + spec.size[0]).toFixed(1);
+      var dur = (Math.random() * (spec.speed[1] - spec.speed[0]) + spec.speed[0]).toFixed(1);
       var delay = (-Math.random() * 26).toFixed(1);
-      var dx = Math.round(Math.random() * 160 - 80);
-      var op = (Math.random() * 0.4 + 0.22).toFixed(2);
-      html += '<i class="' + kind + '" style="--x:' + x + '%;--s:' + size + 'px;--d:' + dur + 's;--delay:' + delay + 's;--dx:' + dx + 'px;--o:' + op + '"></i>';
+      var dx = Math.round(Math.random() * 170 - 85);
+      var op = (Math.random() * 0.4 + 0.24).toFixed(2);
+      html += '<i class="' + spec.kind + '" style="--x:' + x + '%;--s:' + size + 'px;--d:' + dur + 's;--delay:' + delay +
+        's;--dx:' + dx + 'px;--o:' + op + '"></i>';
     }
     box.innerHTML = html;
   }
@@ -1628,7 +1715,7 @@
   }
 
   /* --------------------------------------------------------------- carousel */
-  var crsIndex = 0, crsTimer = 0;
+  var crsIndex = 0, crsTimer = 0, crsPaused = false;
   function goSlide(i) {
     var slides = $$('.hero-slide');
     if (!slides.length) return;
@@ -1638,7 +1725,10 @@
       sl.classList.toggle('is-on', on);
       if (on) sl.removeAttribute('aria-hidden'); else sl.setAttribute('aria-hidden', 'true');
     });
-    $$('[data-crs-dot]').forEach(function (d, n) { d.classList.toggle('is-on', n === crsIndex); });
+    $$('[data-crs-dot]').forEach(function (d, n) {
+      d.classList.toggle('is-on', n === crsIndex);
+      d.setAttribute('aria-pressed', n === crsIndex ? 'true' : 'false');
+    });
     var count = document.getElementById('crs-count');
     if (count) count.textContent = ('0' + (crsIndex + 1)).slice(-2) + ' / ' + ('0' + slides.length).slice(-2);
     var bar = document.getElementById('crs-bar');
@@ -1649,13 +1739,34 @@
     var stage = document.getElementById('hero-slides');
     var wrap = document.getElementById('hero-media');
     if (!stage) return;
-    var auto = state.prefs.carousel === 'on' && !motionReduced();
+    var auto = state.prefs.carousel === 'on' && !motionReduced() && !crsPaused;
     if (wrap && wrap.setAttribute) wrap.setAttribute('data-auto', auto ? 'on' : 'off');
+    var pause = document.getElementById('crs-pause');
+    if (pause) {
+      pause.setAttribute('aria-pressed', crsPaused ? 'true' : 'false');
+      pause.textContent = crsPaused ? 'Play' : 'Pause';
+      pause.setAttribute('aria-label', crsPaused ? 'Resume automatic slide rotation' : 'Pause automatic slide rotation');
+    }
     if (!auto) return;
     crsTimer = setInterval(function () { goSlide(crsIndex + 1); }, 7000);
   }
 
   /* ----------------------------------------------------------- look menu */
+  function lookNote(text) {
+    var pop = $('#look-pop');
+    if (!pop) return;
+    var note = $('#look-note');
+    if (!note) {
+      note = document.createElement('p');
+      note.id = 'look-note';
+      note.className = 'look-note';
+      note.setAttribute('role', 'status');
+      pop.appendChild(note);
+    }
+    note.textContent = text;
+    setTimeout(function () { if (note.parentNode) note.remove(); }, 5000);
+  }
+
   function closeLookMenu() {
     var pop = $('#look-pop'), btn = $('#look-btn');
     if (pop) pop.hidden = true;
@@ -1719,9 +1830,53 @@
     requestAnimationFrame(step);
   }
 
+  /* Opening screen: shown once per browser session, and skipped for reduced motion or a
+     direct link into a page other than the home page. */
+  function wireIntro() {
+    var intro = document.getElementById('site-intro');
+    if (!intro) return;
+    var seen = false;
+    try { seen = sessionStorage.getItem('laredo-intro') === '1'; } catch (e) { /* private mode */ }
+    var skip = seen || motionReduced();
+    if (skip) { intro.remove(); return; }
+    var finish = function () {
+      if (intro.classList.contains('is-done')) return;
+      intro.classList.add('is-done');
+      try { sessionStorage.setItem('laredo-intro', '1'); } catch (e) { /* ignore */ }
+      setTimeout(function () { if (intro.parentNode) intro.remove(); }, 600);
+    };
+    var status = document.getElementById('intro-status');
+    if (status) status.textContent = 'Opening the gates';
+    setTimeout(finish, 1350);
+    if (document.addEventListener) document.addEventListener('laredo:ready', finish);
+  }
+
+  /* A soft light that follows the pointer. Off with the pref, off for reduced motion. */
+  function wireCursorGlow() {
+    var glow = document.getElementById('cursor-glow');
+    if (!glow || !document.addEventListener) return;
+    var pending = false, mx = 50, my = 30;
+    document.addEventListener('pointermove', function (e) {
+      if (state.prefs.cursor !== 'on' || motionReduced()) return;
+      mx = (e.clientX / (window.innerWidth || 1)) * 100;
+      my = (e.clientY / (window.innerHeight || 1)) * 100;
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(function () {
+        pending = false;
+        glow.style.setProperty('--mx', mx.toFixed(2) + '%');
+        glow.style.setProperty('--my', my.toFixed(2) + '%');
+        glow.classList.add('is-live');
+      });
+    }, { passive: true });
+    document.addEventListener('pointerleave', function () { glow.classList.remove('is-live'); });
+  }
+
   function initUi() {
     root.classList.add('js');
     wireLookMenu();
+    wireIntro();
+    wireCursorGlow();
 
     $$('[data-crs]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -1732,13 +1887,18 @@
     $$('[data-crs-dot]').forEach(function (d, n) {
       d.addEventListener('click', function () { goSlide(n); restartCarousel(); });
     });
+    var pause = document.getElementById('crs-pause');
+    if (pause) {
+      pause.addEventListener('click', function () {
+        crsPaused = !crsPaused;
+        restartCarousel();
+      });
+    }
     var stage = document.getElementById('hero-slides');
     if (stage) {
-      stage.addEventListener('pointerenter', function () { if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; } });
-      stage.addEventListener('pointerleave', function () { restartCarousel(); });
       stage.addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowRight') goSlide(crsIndex + 1);
-        if (e.key === 'ArrowLeft') goSlide(crsIndex - 1);
+        if (e.key === 'ArrowRight') { goSlide(crsIndex + 1); restartCarousel(); }
+        if (e.key === 'ArrowLeft') { goSlide(crsIndex - 1); restartCarousel(); }
       });
     }
     goSlide(0);

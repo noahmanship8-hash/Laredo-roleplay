@@ -1,6 +1,6 @@
 # Laredo Roleplay website for Cloudflare
 
-The navy and sunset look of the original, laid out like the Texas reference, with frosted glass panels, a Dark / Light / Halloween look, and a Settings page for each visitor. It also has Sign in with Discord, Roblox linking, applications filled in on the site, and a staff panel.
+The navy and sunset look of the original, with a picture carousel on the home page, moving light in the background, a dark / light / Halloween / Christmas look, and a Settings page for each visitor. It also has Sign in with Discord, Roblox linking, applications filled in on the site, a dashboard for every member (live player count, Discord roles, badges and a daily check-in), an editable staff page, and a staff panel.
 
 ## What is in this folder
 
@@ -61,6 +61,8 @@ In your Pages project open **Settings > Variables and Secrets** and add these. U
 | `ROBLOX_CLIENT_ID` | From Part 6 (optional) |
 | `ROBLOX_CLIENT_SECRET` | From Part 6 (optional) |
 | `APPLICATIONS_WEBHOOK_URL` | A Discord webhook link (optional). Staff get a message when someone applies or a decision is made. |
+| `ERLC_API_KEY` | Your ER:LC private-server key (optional). Turns on the live player count. You can also paste it in the staff panel instead. |
+| `ERLC_API_BASE` | Only if ER:LC changes its address again. Defaults to `https://api.erlc.gg/v1`. |
 
 Cloudflare only picks up new variables and bindings on a new deployment. Open **Deployments**, find the latest one and choose **Retry deployment**, or push any small change to GitHub.
 
@@ -84,24 +86,44 @@ Roblox may only let a few people use a new app until it passes their review. Eve
 
 Roles are checked against your server whenever something private is opened, so removing a role removes access within about a minute. To change them later, add the variables `STAFF_ROLE_ID` (one ID) or `ADMIN_ROLE_IDS` (IDs separated by commas).
 
+## What is new in this version
+
+- **Home page carousel**: three pictures that change on their own (visitors can turn that off in Settings) with arrows, dots and a caption. The highway sign ticker is gone.
+- **Christmas look**: ice blue, pine and brass, with snow across the site. It sits next to Dark, Light and Halloween, and it is in the header's look menu and in Settings.
+- **Dashboard for every member**: their Discord roles (names and colours), the live ER:LC player count and join code, who is on duty, a daily check-in with a streak, badges they have earned, and their applications. Staff admin see a link to the panel.
+- **Inventory**: badges are earned by playing (linked Roblox account, an application sent, check-in streaks, staff team) or handed out by staff admins. Members can wear one next to their name.
+- **Editable staff page**: staff admins add, edit, reorder and remove the people on `#staff`, with a name, role, team, colour, Discord ID, avatar link and a short bio.
+- **Themes on and off**: in the staff panel, switch any look off for everybody, and pick the default look for new visitors.
+- **More customisation**: dashboard wording, which dashboard cards show, whether the shop is open, plus all the old settings (notice, maintenance, departments, applications, prices).
+- **Loading screen**: opening the dashboard or the panel shows a short loading screen while the account and live count are fetched.
+
+## Live player count (ER:LC)
+
+Add `ERLC_API_KEY` in Cloudflare (Part 5), or paste the key into **Staff panel > Site settings > ER:LC server key**, and the home page fact and every dashboard show the live count. The key is kept in your KV store and is never sent to a browser. The site tries `api.erlc.gg` and then the old `api.policeroleplay.community` address, caches the answer for 20 seconds, and falls back to a friendly message if the server is closed or the key is wrong.
+
 ## Two kinds of settings
 
 **Visitor settings** are on the Settings page (`#settings`, linked from the header and footer). Each visitor chooses for themselves, and the choice is saved on their own device:
-- Colour mode: Match my device, Light or Dark, plus the Halloween look on or off.
+- Colour mode: Match my device, Light or Dark, plus the Halloween and Christmas looks on or off (turning one on turns the other off).
 - Accent colour: Sunset, Gold, Teal or Rose.
-- Glass effects, background glow, text size, an easy-read font, high contrast, animations and the highway sign ticker.
+- Glass effects, background effects, text size, an easy-read font, high contrast, animations, and whether the home page pictures change on their own.
 
 **Site settings** are in the staff panel, for Head of Staff, Executive, Leadership and Discord Developers. They change the site for everyone:
 - Open or close each department and change its Discord invite.
 - Open or close each application.
-- A notice banner, maintenance mode, shop prices, and the default look (Dark, Light or Halloween) for visitors who have not chosen one.
+- Which looks are allowed, and the default look (Dark, Light, Halloween or Christmas) for visitors who have not chosen one.
+- The dashboard wording, which dashboard cards show, and whether the shop is open.
+- The ER:LC server key for the live player count.
+- The people on the staff page (the **Staff page** tab), and badges for individual members (the **Members** tab).
 
 Changes can take up to a minute to reach everyone, because Cloudflare KV spreads data around the world. Maintenance mode is a cover over the site rather than a lock on the files.
 
 ## Changing things yourself
 
 - **Application questions:** edit `src/forms.mjs`.
-- **Photos:** drop `hero.jpg` in `public/assets/photos/` to show a photo beside the headline. Add `gallery-1.jpg`, `gallery-2.jpg` and `gallery-3.jpg` and a "Taken in Laredo" section appears on the home page. Without photos, those parts stay hidden or use the logo.
+- **Staff page:** the staff panel writes it; nothing to edit by hand. The teams and their colours live in `TEAM_INFO` in `public/site.js`.
+- **Carousel slides:** the three home slides are drawn in the page (wordmark slide, plan grid, rings) so there are no photos to replace. The words live in `public/index.html` under `hero-slide`, and the artwork and colours are in `styles.css` under `slide-art`.
+- **Badges:** the list is `INVENTORY` in `src/core.mjs`.
 - **Server code:** add your private server code to `public/config.js` and it shows on the home page.
 - **Other text:** open `public/index.html` and use Find.
 - **Announcements:** nothing to do. The GitHub job keeps `public/announcements.json` up to date, and Cloudflare redeploys when it changes.
@@ -124,6 +146,10 @@ Changes can take up to a minute to reach everyone, because Cloudflare KV spreads
 - Keep tokens and secrets only in Cloudflare's variables and GitHub's secrets. Never put them in a file.
 - If a secret leaks, reset it (Discord Developer Portal or Roblox) and update Cloudflare.
 - The site stores Discord and Roblox IDs, names and application answers in your KV store. The Privacy page explains this to members.
+
+## Previewing locally (optional)
+
+`npm run preview` starts a preview at `http://localhost:4173` with pretend Discord users, a pretend ER:LC server and storage in memory, so you can click through the dashboard and the staff panel without any keys. Then open `/api/dev-login?as=member`, `?as=staff` or `?as=admin`. This file (`scripts/preview-server.mjs`) is not used by Cloudflare and is not part of the public site.
 
 ## Tests (optional)
 

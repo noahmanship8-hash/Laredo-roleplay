@@ -1,6 +1,5 @@
-Put real screenshots from your server here.
+The site no longer uses photos here. The home carousel, the dashboard backdrop and the
+seasonal effects are all drawn in CSS, so nothing has to be uploaded.
 
-hero.jpg   Shown beside the headline on the home page (landscape, about 1600 x 1200 works well).
-           If the file is missing, the logo is shown instead.
-
-Keep files under 1 MB so the page loads quickly.
+Your original uploads are kept in this folder in case you want them later, but they are
+not linked from any page.

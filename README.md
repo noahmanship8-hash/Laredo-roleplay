@@ -122,7 +122,7 @@ Changes can take up to a minute to reach everyone, because Cloudflare KV spreads
 
 - **Application questions:** edit `src/forms.mjs`.
 - **Staff page:** the staff panel writes it; nothing to edit by hand. The teams and their colours live in `TEAM_INFO` in `public/site.js`.
-- **Photos:** the home carousel uses `public/assets/photos/slide-1.jpg`, and the middle picture is drawn in the page (the sun, hills and logo). Replace `slide-1.jpg` with your own photo any time. `hero.jpg`, `hero-sm.jpg` and `city-map.jpg` are used around the site, and `gallery-1/2/3.jpg` feed the "Taken in Laredo" strip.
+- **Carousel slides:** the three home slides are drawn in the page (wordmark slide, plan grid, rings) so there are no photos to replace. The words live in `public/index.html` under `hero-slide`, and the artwork and colours are in `styles.css` under `slide-art`.
 - **Badges:** the list is `INVENTORY` in `src/core.mjs`.
 - **Server code:** add your private server code to `public/config.js` and it shows on the home page.
 - **Other text:** open `public/index.html` and use Find.

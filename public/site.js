@@ -442,6 +442,8 @@
     if (meta) meta.setAttribute('content', theme === 'light' ? '#F4EFE4' : theme === 'halloween' ? '#0F0A1C' : theme === 'christmas' ? '#07131A' : '#0A1020');
     syncControls();
     restartCarousel();
+    var key = theme + '|' + (motionReduced() ? 'reduce' : 'full') + '|' + state.prefs.ambient;
+    if (key !== fxKey) { fxKey = key; buildFx(theme); }
   }
 
   function setPref(key, value) {
@@ -1494,6 +1496,29 @@
     });
   }
 
+  /* -------------------------------------------------- seasonal particles */
+  var fxKey = '';
+  function buildFx(theme) {
+    var box = document.getElementById('fx');
+    if (!box) return;
+    if (state.prefs.ambient === 'off' || motionReduced()) { box.innerHTML = ''; return; }
+    var wide = (window.innerWidth || 1200) > 720;
+    var count = wide ? 30 : 16;
+    var warm = theme === 'halloween' || theme === 'dark';
+    var kind = theme === 'christmas' ? 'round' : warm ? 'warm' : 'cool';
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      var x = (Math.random() * 100).toFixed(2);
+      var size = (Math.random() * 3.2 + 2).toFixed(1);
+      var dur = (Math.random() * 14 + (theme === 'christmas' ? 9 : 14)).toFixed(1);
+      var delay = (-Math.random() * 26).toFixed(1);
+      var dx = Math.round(Math.random() * 160 - 80);
+      var op = (Math.random() * 0.4 + 0.22).toFixed(2);
+      html += '<i class="' + kind + '" style="--x:' + x + '%;--s:' + size + 'px;--d:' + dur + 's;--delay:' + delay + 's;--dx:' + dx + 'px;--o:' + op + '"></i>';
+    }
+    box.innerHTML = html;
+  }
+
   /* ------------------------------------------------------------ boot screen */
   var bootAt = 0, bootSeq = 0;
   function showBoot(text) {
@@ -1530,11 +1555,19 @@
       if (on) sl.removeAttribute('aria-hidden'); else sl.setAttribute('aria-hidden', 'true');
     });
     $$('[data-crs-dot]').forEach(function (d, n) { d.classList.toggle('is-on', n === crsIndex); });
+    var count = document.getElementById('crs-count');
+    if (count) count.textContent = ('0' + (crsIndex + 1)).slice(-2) + ' / ' + ('0' + slides.length).slice(-2);
+    var bar = document.getElementById('crs-bar');
+    if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
   }
   function restartCarousel() {
     if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; }
-    if (!document.getElementById('hero-slides')) return;
-    if (state.prefs.carousel !== 'on' || motionReduced()) return;
+    var stage = document.getElementById('hero-slides');
+    var wrap = document.getElementById('hero-media');
+    if (!stage) return;
+    var auto = state.prefs.carousel === 'on' && !motionReduced();
+    if (wrap && wrap.setAttribute) wrap.setAttribute('data-auto', auto ? 'on' : 'off');
+    if (!auto) return;
     crsTimer = setInterval(function () { goSlide(crsIndex + 1); }, 7000);
   }
 
@@ -1672,22 +1705,6 @@
       });
     }
 
-    var shots = $$('img[data-gallery]');
-    if (shots.length) {
-      var loaded = 0;
-      var pending = shots.length;
-      var settle = function () {
-        pending--;
-        if (pending === 0 && loaded) { var sec = $('#gallery-sec'); if (sec) sec.hidden = false; }
-      };
-      shots.forEach(function (img) {
-        var fig = img.closest ? img.closest('figure') : null;
-        var ok = function () { loaded++; settle(); };
-        var bad = function () { if (fig) fig.remove(); settle(); };
-        if (img.complete) { if (img.naturalWidth) ok(); else bad(); } else { img.addEventListener('load', ok); img.addEventListener('error', bad); }
-      });
-    }
-
     var pumpkin = $('#pumpkin');
     var slot = $('#ghost-slot');
     if (pumpkin && slot) {
@@ -1717,13 +1734,6 @@
   }
 
   initPrefs();
-
-  $$('img[data-optional]').forEach(function (img) {
-    var ok = function () { var fig = img.closest('figure'); if (fig) fig.classList.add('has-photo'); };
-    var bad = function () { img.remove(); };
-    if (img.complete) { if (img.naturalWidth) ok(); else bad(); }
-    else { img.addEventListener('load', ok); img.addEventListener('error', bad); }
-  });
 
   initUi();
   window.addEventListener('hashchange', showPage);

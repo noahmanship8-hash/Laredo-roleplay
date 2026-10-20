@@ -13,10 +13,15 @@
 <body>
 <div class="root t-dark" id="root"><div class="bg" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i>
   <i class="aurora a1"></i><i class="aurora a2"></i><i class="aurora a3"></i>
-  <span class="stars"></span><span class="grain"></span><span class="beams"></span>
-  <span class="tree-line"></span></div>
+  <span class="stars"></span><span class="beams"></span><span class="tree-line"></span>
+  <div class="fx" id="fx"></div>
+  <div class="spook" data-only="halloween" aria-hidden="true"><div class="moon"><i></i><i></i><i></i></div>
+  <span class="fly" style="top:14%;--dur:17s;--delay:-3s"><svg class="bat" viewBox="0 0 64 32" width="46" height="23" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span>
+  <span class="fly" style="top:34%;--dur:23s;--delay:-11s"><svg class="bat" viewBox="0 0 64 32" width="34" height="17" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span>
+  <span class="fly" style="top:64%;--dur:20s;--delay:-7s"><svg class="bat" viewBox="0 0 64 32" width="40" height="20" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span>
+  <span class="fly slow" style="top:82%;--dur:31s;--delay:-19s"><svg class="bat" viewBox="0 0 64 32" width="26" height="13" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span>
+  <div class="fog"></div></div><span class="grain"></span></div>
 <div class="progress" aria-hidden="true"></div>
-<div class="snow" data-only="christmas" aria-hidden="true"></div>
 <div id="boot" class="boot" hidden>
   <div class="boot-in" role="status" aria-live="polite">
     <span class="boot-logo"><img src="assets/logo.png" alt=""></span>
@@ -82,12 +87,48 @@
     <div class="cta"><a class="btn btn-primary" href="https://discord.gg/dqpUcfUvrt" target="_blank" rel="noopener noreferrer">Join the Discord</a><a class="btn" href="#dashboard">Open the dashboard</a></div>
   </div>
   <div class="hero-stage" id="hero-media">
-  <div class="hero-slides" id="hero-slides"><figure class="hero-slide is-on" data-slide="0"><img class="hero-shot" src="assets/photos/slide-1.jpg" alt="A staff liveried car on the river road at sunset." fetchpriority="high"><figcaption class="hero-cap"><span class="cap-k">From the city</span><span class="cap-t">Last light on the river road</span></figcaption></figure><figure class="hero-slide" data-slide="1" aria-hidden="true"><div class="scene"><svg class="sun" viewBox="0 0 400 400" aria-hidden="true"><defs><clipPath id="sunclip"><circle cx="200" cy="200" r="170"></circle></clipPath></defs><g clip-path="url(#sunclip)"><rect x="0" y="20" width="400" height="100" style="fill:var(--sun1)"></rect><rect x="0" y="120" width="400" height="72" style="fill:var(--sun2)"></rect><rect x="0" y="192" width="400" height="60" style="fill:var(--sun3)"></rect><rect x="0" y="264" width="400" height="44" style="fill:var(--sun4)"></rect><rect x="0" y="322" width="400" height="30" style="fill:var(--sun5)"></rect><rect x="0" y="366" width="400" height="14" style="fill:var(--sun5)"></rect></g></svg></div><svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,120 0,70 50,40 90,62 140,30 200,66 250,36 310,64 360,42 400,60 400,120" style="fill:var(--hill1)"></polygon><polygon points="0,120 0,92 70,70 130,92 190,76 260,100 330,80 400,96 400,120" style="fill:var(--hill2)"></polygon></svg><img class="hero-logo" src="assets/logo.png" alt="Laredo Roleplay logo"><div class="spook" data-only="halloween" aria-hidden="true"><div class="moon"><i></i><i></i><i></i></div><span class="fly" style="top:14%;--dur:17s;--delay:-3s"><svg class="bat" viewBox="0 0 64 32" width="46" height="23" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span><span class="fly" style="top:38%;--dur:23s;--delay:-11s"><svg class="bat" viewBox="0 0 64 32" width="34" height="17" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span><span class="fly" style="top:62%;--dur:20s;--delay:-7s"><svg class="bat" viewBox="0 0 64 32" width="40" height="20" aria-hidden="true"><path d="M28 14C22 6 12 6 2 12C8 12 10 16 12 20C15 17 18 17 20 21C22 18 25 18 28 22Z"></path><path d="M36 14C42 6 52 6 62 12C56 12 54 16 52 20C49 17 46 17 44 21C42 18 39 18 36 22Z"></path><path d="M27 12L28 5L32 9L36 5L37 12C37 20 34 24 32 24C30 24 27 20 27 12Z"></path></svg></span><div class="ghost-wrap"><svg class="ghost" viewBox="0 0 60 70" width="54" height="63" aria-hidden="true"><path d="M8 66V28C8 12 18 4 30 4C42 4 52 12 52 28V66L45 60L38 66L30 60L22 66L15 60Z" fill="#EFE9F8" fill-opacity="0.92"></path><circle cx="23" cy="28" r="4" fill="#0F0A1C"></circle><circle cx="37" cy="28" r="4" fill="#0F0A1C"></circle><ellipse cx="30" cy="40" rx="4" ry="5" fill="#0F0A1C"></ellipse></svg></div><div class="web-wrap"><svg class="web" width="170" height="170" viewBox="0 0 220 220" fill="none" stroke="#D0C4EA" stroke-opacity="0.5" stroke-width="1.5" aria-hidden="true"><path d="M0 0L220 0M0 0L200 80M0 0L150 150M0 0L80 200M0 0L0 220"></path><path d="M59 0Q45 9 54 22Q38 25 40 40Q25 38 22 54Q9 45 0 59"></path><path d="M118 0Q90 18 108 44Q76 50 80 80Q50 76 44 108Q18 90 0 118"></path><path d="M177 0Q135 27 162 66Q114 75 120 120Q75 114 66 162Q27 135 0 177"></path></svg></div><div class="fog"></div></div><figcaption class="hero-cap"><span class="cap-k">The community</span><span class="cap-t">Eight departments, one city</span></figcaption></figure><figure class="hero-slide" data-slide="2" aria-hidden="true"><img class="hero-shot map" src="assets/photos/city-map.jpg" alt="Street map of Laredo."><figcaption class="hero-cap"><span class="cap-k">The map</span><span class="cap-t">Everything runs through the crossing</span></figcaption></figure></div>
-  <button class="crs-btn prev" type="button" data-crs="prev" aria-label="Previous picture"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-  <button class="crs-btn next" type="button" data-crs="next" aria-label="Next picture"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-  <div class="crs-dots" role="tablist" aria-label="Pictures"><button type="button" role="tab" data-crs-dot="0" aria-label="Picture 1" class="is-on"></button><button type="button" role="tab" data-crs-dot="1" aria-label="Picture 2"></button><button type="button" role="tab" data-crs-dot="2" aria-label="Picture 3"></button></div>
+  <div class="hero-slides" id="hero-slides">
+
+    <article class="hero-slide is-on" data-slide="0">
+      <div class="slide-art art-sun" aria-hidden="true"><div class="scene"><svg class="sun" viewBox="0 0 400 400" aria-hidden="true"><defs><clipPath id="sunclip"><circle cx="200" cy="200" r="170"></circle></clipPath></defs><g clip-path="url(#sunclip)"><rect x="0" y="20" width="400" height="100" style="fill:var(--sun1)"></rect><rect x="0" y="120" width="400" height="72" style="fill:var(--sun2)"></rect><rect x="0" y="192" width="400" height="60" style="fill:var(--sun3)"></rect><rect x="0" y="264" width="400" height="44" style="fill:var(--sun4)"></rect><rect x="0" y="322" width="400" height="30" style="fill:var(--sun5)"></rect><rect x="0" y="366" width="400" height="14" style="fill:var(--sun5)"></rect></g></svg></div><svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,120 0,70 50,40 90,62 140,30 200,66 250,36 310,64 360,42 400,60 400,120" style="fill:var(--hill1)"></polygon><polygon points="0,120 0,92 70,70 130,92 190,76 260,100 330,80 400,96 400,120" style="fill:var(--hill2)"></polygon></svg><img class="art-logo" src="assets/logo.png" alt=""></div>
+      <div class="slide-body">
+        <p class="slide-k">Now open</p>
+        <h2 class="slide-t">Open every night</h2>
+        <p class="slide-p">Eight departments, one crossing. Pick a lane and work the shift.</p>
+        <a class="slide-link" href="#departments">See the departments</a>
+      </div>
+      <span class="slide-n" aria-hidden="true">01</span>
+    </article>
+
+    <article class="hero-slide" data-slide="1" aria-hidden="true">
+      <div class="slide-art art-grid" aria-hidden="true"><span class="grid-lines"></span><span class="grid-glow"></span><span class="ring r1"></span><span class="ring r2"></span></div>
+      <div class="slide-body">
+        <p class="slide-k">Hiring</p>
+        <h2 class="slide-t">Join the team</h2>
+        <p class="slide-p">Staff, Discord and server roles. Read the rules, then send yours in.</p>
+        <a class="slide-link" href="#applications">See what is open</a>
+      </div>
+      <span class="slide-n" aria-hidden="true">02</span>
+    </article>
+
+    <article class="hero-slide" data-slide="2" aria-hidden="true">
+      <div class="slide-art art-rings" aria-hidden="true"><span class="orb-ring o-a"></span><span class="orb-ring o-b"></span><span class="orb-ring o-c"></span><span class="art-glow"></span></div>
+      <div class="slide-body">
+        <p class="slide-k">From the Discord</p>
+        <h2 class="slide-t">News, as it lands</h2>
+        <p class="slide-p">Announcements, events and updates, copied from our Discord within minutes.</p>
+        <a class="slide-link" href="#announcements">Read announcements</a>
+      </div>
+      <span class="slide-n" aria-hidden="true">03</span>
+    </article>
+
+  </div>
+  <button class="crs-btn prev" type="button" data-crs="prev" aria-label="Previous slide"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+  <button class="crs-btn next" type="button" data-crs="next" aria-label="Next slide"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+  <div class="crs-foot"><div class="crs-dots" role="tablist" aria-label="Slides"><button type="button" role="tab" data-crs-dot="0" aria-label="Slide 1" class="is-on"></button><button type="button" role="tab" data-crs-dot="1" aria-label="Slide 2"></button><button type="button" role="tab" data-crs-dot="2" aria-label="Slide 3"></button></div>
+  <span class="crs-count" id="crs-count">01 / 03</span></div>
+  <span class="crs-bar" aria-hidden="true"><i id="crs-bar"></i></span>
 </div>
-</div></div>
 <div class="road" aria-hidden="true"></div>
 <div class="facts"><div class="wrap facts-grid">
   <div data-reveal><p class="kicker">Open now</p><p class="fact"><span data-open-count>2</span><span class="fact-of"> of 8 departments</span></p></div>
@@ -116,14 +157,6 @@
 <div class="sec"><div class="wrap two-col">
   <div data-reveal class="sticky"><p class="kicker">From the Discord</p><h2 class="h2">Latest announcement</h2></div>
   <div data-reveal id="home-latest"><p class="muted">Loading...</p></div>
-</div></div>
-<div class="sec" id="gallery-sec" hidden><div class="wrap">
-  <div data-reveal><p class="kicker">From the server</p><h2 class="h2">Taken in Laredo</h2><p class="muted">Screenshots from the city. Nothing staged for the website.</p></div>
-  <div class="gallery">
-    <figure class="shot" style="--tilt:-1.4deg" data-reveal><img data-gallery src="assets/photos/gallery-1.jpg" alt="Screenshot from Laredo Roleplay"><figcaption>Exhibit A</figcaption></figure>
-    <figure class="shot" style="--tilt:1deg;--d:.08s" data-reveal><img data-gallery src="assets/photos/gallery-2.jpg" alt="Screenshot from Laredo Roleplay"><figcaption>Exhibit B</figcaption></figure>
-    <figure class="shot" style="--tilt:-.6deg;--d:.16s" data-reveal><img data-gallery src="assets/photos/gallery-3.jpg" alt="Screenshot from Laredo Roleplay"><figcaption>Exhibit C</figcaption></figure>
-  </div>
 </div></div>
 <div class="invite"><div class="wrap invite-in" data-reveal>
   <div><p class="kicker">Get started</p><h2 class="display display-sm">Pull up to the lane.</h2>
@@ -166,7 +199,7 @@
 </div>
 </section>
 <section class="pg pg-dash" data-page="dashboard">
-<div class="dash-backdrop" aria-hidden="true"><img src="assets/photos/city-map.jpg" alt=""><span></span></div>
+<div class="dash-backdrop" aria-hidden="true"><span></span></div>
 <div class="wrap dash-wrap"><div id="dash-root" class="dash"></div></div>
 </section>
 <section class="pg pg-panel" data-page="panel">

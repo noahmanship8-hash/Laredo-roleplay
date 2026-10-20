@@ -8,7 +8,33 @@
 <meta name="theme-color" content="#0A1020">
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=Barlow:wght@400;500;600;700&amp;family=Source+Serif+4:ital,wght@0,400;0,600;1,400&amp;family=Syncopate:wght@700&amp;display=swap">
-<link rel="stylesheet" href="styles.css">
+<!-- The loader is the one screen that has to look right before anything else has
+     loaded, so it carries its own styles: a stylesheet that is still cached from an
+     earlier deploy can never leave it unstyled. -->
+<style>
+#boot:not([hidden]){position:fixed;inset:0;z-index:330;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(70% 60% at 50% 32%,#0a0f18 0,#05080F 70%);
+  transition:opacity .4s ease,visibility .4s ease}
+#boot.closing{opacity:0;visibility:hidden;pointer-events:none}
+#boot .boot-in{display:grid;justify-items:center;gap:8px;text-align:center;width:100%;max-width:360px;
+  padding:30px 26px 28px;border-radius:16px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.055);box-shadow:0 24px 70px rgba(0,0,0,.45);
+  animation:bootpop .3s cubic-bezier(.2,.9,.2,1) both}
+#boot .boot-logo{width:56px;height:56px;display:grid;place-items:center;border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);margin-bottom:5px}
+#boot .boot-logo img{width:36px;height:36px;object-fit:contain;animation:bootpulse 1.8s ease-in-out infinite}
+#boot .boot-kicker{margin:0;font:600 10px 'Barlow',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.48)}
+#boot .boot-text{margin:0;font:600 14px 'Barlow',sans-serif;color:rgba(255,255,255,.86)}
+#boot .boot-bar{display:block;width:180px;height:2px;margin-top:10px;border-radius:99px;
+  background:rgba(255,255,255,.14);overflow:hidden}
+#boot .boot-bar i{display:block;width:38%;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,#E0B279,#E8C38D);animation:bootbar 1.25s ease-in-out infinite}
+@keyframes bootpulse{0%,100%{opacity:.6;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+@keyframes bootbar{0%{transform:translateX(-60%)}100%{transform:translateX(320%)}}
+@keyframes bootpop{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#boot .boot-logo img,#boot .boot-bar i{animation:none}}
+</style>
+<link rel="stylesheet" href="styles.css?v=2026-10-20b">
 </head>
 <body>
 <div class="root t-dark" id="root">
@@ -289,7 +315,7 @@
 </div></footer>
 </div>
 <noscript><style>.pg[data-page="home"]{display:block}[data-reveal]{opacity:1!important;transform:none!important}</style></noscript>
-<script src="config.js"></script>
-<script src="site.js"></script>
+<script src="config.js?v=2026-10-20b"></script>
+<script src="site.js?v=2026-10-20b"></script>
 </body>
 </html>

@@ -1201,6 +1201,8 @@ main,.site-footer{position:relative;z-index:2}
 .fact{font-size:30px;font-weight:600;letter-spacing:-.02em;text-transform:none;line-height:1.1;margin-top:8px}
 .fact-sm{font-size:17px;font-weight:600;line-height:1.35;max-width:19em}
 .fact-of{margin-top:auto;padding-top:9px;font-size:10.5px;letter-spacing:.16em;color:var(--muted)}
+/* the band draws its own closing rule, so the section under it does not draw a second one */
+.facts + .sec{border-top:0}
 #fact-players.is-off .fact{font-size:17px;color:var(--sub);font-weight:600;margin-top:8px}
 #fact-players.is-off .fact-of{padding-top:6px}
 

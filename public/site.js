@@ -20,6 +20,20 @@
     ['lfd', 'Laredo Fire Department'], ['fbi', 'Federal Bureau of Investigation'], ['bp', 'Border Patrol'],
     ['swat', 'SWAT'], ['dot', 'Department of Transportation']
   ];
+  var TEAM_INFO = {
+    ownership: { name: 'Ownership', color: '#2F3BFF', blurb: 'Sets the direction and pays the bills.' },
+    executive: { name: 'Executive team', color: '#FF2E9A', blurb: 'Runs the community day to day.' },
+    community: { name: 'Community management', color: '#FFB020', blurb: 'Events, partnerships and the Discord.' },
+    discord_dev: { name: 'Discord developer', color: '#7A869F', blurb: 'Bots, channels and automation.' },
+    server_dev: { name: 'Server developer', color: '#2B3DC4', blurb: 'Builds and fixes what you see in game.' },
+    internal_affairs: { name: 'Internal affairs', color: '#FFF21A', blurb: 'Keeps the staff team honest.' },
+    management: { name: 'Management team', color: '#F2701D', blurb: 'Supervises the day-to-day staff.' },
+    supervisory: { name: 'Supervisory team', color: '#1FF2B4', blurb: 'First point of call for the team.' },
+    administrator: { name: 'Administrator team', color: '#B01FFF', blurb: 'Handles the serious reports.' },
+    moderator: { name: 'Moderator team', color: '#FF2638', blurb: 'On the front line in game and in Discord.' }
+  };
+  var TEAM_ORDER = Object.keys(TEAM_INFO);
+  var RARITY_ORDER = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
   var APP_TYPES = { staff: 'Staff application', discord_dev: 'Discord developer application', server_dev: 'Server developer application' };
   var PRICE_FIELDS = [
     ['silver_month', 'Laredo Silver, 1 month'], ['silver_perm', 'Laredo Silver, permanent'],
@@ -309,16 +323,25 @@
     });
     document.title = (r.page === 'home' ? '' : TITLES[r.page] + ' | ') + 'Laredo Roleplay';
     if (changed) window.scrollTo(0, 0);
+    if (changed && (r.page === 'dashboard' || r.page === 'panel')) {
+      dashPainted = false;
+      showBoot(r.page === 'panel' ? 'Checking your staff access' : 'Opening your dashboard');
+    }
     if (r.page === 'announcements') loadFeed();
-    if (r.page === 'home') loadHomeLatest();
+    if (r.page === 'home') { loadHomeLatest(); loadServer(); }
     if (r.page === 'dashboard') renderDashboard();
+    if (r.page === 'staff') renderStaffPage();
     if (r.page === 'apply') renderApply(r.arg);
     if (r.page === 'panel') renderPanel();
   }
 
   /* --------------------------------------------------------------- preferences */
   var PREF_KEY = 'laredo-prefs';
-  var DEFAULT_PREFS = { mode: 'auto', halloween: false, accent: 'sunset', glass: 'on', ambient: 'on', text: 'md', font: 'brand', contrast: 'normal', motion: 'auto', ticker: 'on' };
+  var DEFAULT_PREFS = {
+    mode: 'auto', halloween: false, christmas: false, accent: 'sunset', glass: 'on', ambient: 'on',
+    text: 'md', font: 'brand', contrast: 'normal', motion: 'auto', ticker: 'on', carousel: 'on'
+  };
+  var THEME_NAMES = { dark: 'Dark', light: 'Light', halloween: 'Halloween', christmas: 'Christmas' };
   var lightQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
   var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   state.hasSavedPrefs = false;
@@ -349,6 +372,21 @@
     return state.prefs.motion === 'reduce' || (state.prefs.motion === 'auto' && Boolean(motionQuery && motionQuery.matches));
   }
 
+  // Staff can switch a look off for everybody. A saved look that is off falls back politely.
+  function themeAvailable(key) {
+    var t = state.settings && state.settings.themes;
+    return !t || t[key] !== false;
+  }
+
+  function resolveTheme() {
+    var p = state.prefs;
+    if (p.christmas && themeAvailable('christmas')) return 'christmas';
+    if (p.halloween && themeAvailable('halloween')) return 'halloween';
+    var light = p.mode === 'light' || (p.mode === 'auto' && Boolean(lightQuery && lightQuery.matches));
+    if (light) return themeAvailable('light') ? 'light' : 'dark';
+    return themeAvailable('dark') ? 'dark' : 'light';
+  }
+
   function syncControls() {
     $$('[data-pref]').forEach(function (el) {
       var key = el.getAttribute('data-pref');
@@ -364,18 +402,46 @@
         });
       }
     });
+    syncLookMenu();
+  }
+
+  function syncLookMenu() {
+    var theme = resolveTheme();
+    var name = $('#look-name');
+    if (name) name.textContent = THEME_NAMES[theme] || 'Dark';
+    $$('[data-look]').forEach(function (btn) {
+      var key = btn.getAttribute('data-look');
+      var on = key === theme;
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+      if (!themeAvailable(key)) btn.setAttribute('data-off', '1'); else btn.removeAttribute('data-off');
+      btn.classList.toggle('on', on);
+    });
+    var note = $('#settings-theme-note');
+    if (note) {
+      var hidden = [];
+      ['dark', 'light', 'halloween', 'christmas'].forEach(function (k) { if (!themeAvailable(k)) hidden.push(THEME_NAMES[k]); });
+      if (hidden.length) {
+        note.hidden = false;
+        note.textContent = 'Switched off by staff right now: ' + hidden.join(', ') + '.';
+      } else {
+        note.hidden = true;
+        note.textContent = '';
+      }
+    }
   }
 
   function applyPrefs() {
     var p = state.prefs;
-    var light = p.mode === 'light' || (p.mode === 'auto' && Boolean(lightQuery && lightQuery.matches));
-    var theme = p.halloween ? 'halloween' : (light ? 'light' : 'dark');
-    root.classList.remove('t-dark', 't-light', 't-halloween');
+    var theme = resolveTheme();
+    root.classList.remove('t-dark', 't-light', 't-halloween', 't-christmas');
     root.classList.add('t-' + theme);
     ['accent', 'glass', 'ambient', 'text', 'font', 'contrast', 'ticker', 'motion'].forEach(function (k) { root.setAttribute('data-' + k, p[k]); });
+    root.setAttribute('data-carousel', p.carousel);
+    ['dark', 'light', 'halloween', 'christmas'].forEach(function (k) { root.setAttribute('data-theme-' + k, themeAvailable(k) ? 'on' : 'off'); });
     var meta = $('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4EFE4' : theme === 'halloween' ? '#0F0A1C' : '#0A1020');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4EFE4' : theme === 'halloween' ? '#0F0A1C' : theme === 'christmas' ? '#07131A' : '#0A1020');
     syncControls();
+    restartCarousel();
   }
 
   function setPref(key, value) {
@@ -384,11 +450,23 @@
     applyPrefs();
   }
 
+  function setTheme(key) {
+    var p = state.prefs;
+    if (!themeAvailable(key)) return;
+    if (key === 'dark') { p.mode = 'dark'; p.halloween = false; p.christmas = false; }
+    else if (key === 'light') { p.mode = 'light'; p.halloween = false; p.christmas = false; }
+    else if (key === 'halloween') { p.halloween = true; p.christmas = false; }
+    else if (key === 'christmas') { p.christmas = true; p.halloween = false; }
+    savePrefs();
+    applyPrefs();
+  }
+
   // the look an admin picked for people who have not chosen one themselves
   function applyDefaultLook(value) {
-    if (state.hasSavedPrefs) return;
+    if (state.hasSavedPrefs) { syncLookMenu(); return; }
     state.prefs.mode = value === 'light' ? 'light' : 'dark';
     state.prefs.halloween = value === 'halloween';
+    state.prefs.christmas = value === 'christmas';
     applyPrefs();
   }
 
@@ -398,12 +476,23 @@
     $$('[data-pref]').forEach(function (el) {
       var key = el.getAttribute('data-pref');
       if (el.getAttribute('role') === 'switch') {
-        el.addEventListener('click', function () { setPref(key, !state.prefs[key]); });
+        el.addEventListener('click', function () {
+          var next = !state.prefs[key];
+          if (next && key === 'christmas') state.prefs.halloween = false;
+          if (next && key === 'halloween') state.prefs.christmas = false;
+          setPref(key, next);
+        });
       } else {
         $$('[data-value]', el).forEach(function (btn) {
           btn.addEventListener('click', function () { setPref(key, btn.getAttribute('data-value')); });
         });
       }
+    });
+    $$('[data-look]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setTheme(btn.getAttribute('data-look'));
+        closeLookMenu();
+      });
     });
     var reset = $('#prefs-reset');
     if (reset) {
@@ -467,7 +556,11 @@
     $$('[data-apps-status]').forEach(function (el) {
       el.textContent = openApps.length === 0 ? 'Closed for now' : openApps.length === 1 ? APP_TYPES[openApps[0]] + ' is open' : openApps.length + ' applications are open';
     });
+    var closed = $('#shop-closed');
+    if (closed) closed.hidden = s.shopOpen !== false;
+
     applyDefaultLook(s.defaultTheme);
+    applyPrefs();
     checkMaintenance();
   }
 
@@ -515,81 +608,409 @@
     return formsP;
   }
 
+  var serverP = null, teamP = null, catalogueP = null;
+
+  function applyServer(srv) {
+    state.server = srv;
+    var n = $('#live-players'), of = $('#live-players-of');
+    if (n) {
+      if (srv && srv.live) {
+        n.textContent = String(srv.players);
+        of.textContent = srv.maxPlayers ? 'of ' + srv.maxPlayers + ' in the city' : 'in the city now';
+      } else if (srv && srv.error) {
+        n.textContent = '\u2014';
+        of.textContent = 'Live count unavailable right now';
+      } else if (srv && srv.configured) {
+        n.textContent = '0';
+        of.textContent = 'the server is quiet';
+      } else {
+        n.textContent = '\u2014';
+        of.textContent = 'Live count not set up yet';
+      }
+    }
+  }
+
+  function loadServer(force) {
+    if (!serverP || force) {
+      serverP = api('GET', '/server').then(applyServer, function () { applyServer({ configured: true, live: false, error: 'unreachable' }); });
+    }
+    return serverP;
+  }
+
+  function loadTeam(force) {
+    if (!teamP || force) {
+      teamP = api('GET', '/team').then(function (d) { state.team = d; }, function () { state.team = null; });
+    }
+    return teamP;
+  }
+
+  function loadCatalogue() {
+    if (!catalogueP) {
+      catalogueP = api('GET', '/inventory').then(function (d) { state.catalogue = d.catalogue || []; }, function () { state.catalogue = []; });
+    }
+    return catalogueP;
+  }
+
   function ensureData() {
-    return Promise.all([loadMe(), loadSettings(), loadForms()]);
+    return Promise.all([loadMe(), loadSettings(), loadForms(), loadServer(), loadTeam(), loadCatalogue()]);
   }
 
   /* -------------------------------------------------------------- dashboard */
+  var dashPainted = false;
+  state.dashTab = 'overview';
+
+  function initials(name) {
+    return String(name || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '?';
+  }
+  function fmtNum(n) { return Number(n || 0).toLocaleString('en-US'); }
+  function fmtDay(iso) { try { return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }); } catch (e) { return ''; } }
+
+  function serverPillHtml() {
+    var srv = state.server;
+    if (!srv || !srv.live) return '';
+    return '<span class="dash-pill"><span class="dotm"></span><b>' + fmtNum(srv.players) + '</b> in the city</span>';
+  }
+
+  function dashHead(me) {
+    var d = (state.settings && state.settings.dashboard) || {};
+    var who = me && me.loggedIn ? ', ' + esc(String(me.user.name).split(' ')[0]) : '';
+    return '<div class="dash-head"><div>' +
+      '<p class="dash-kicker"><span class="live"></span>' + esc(d.kicker || 'Your Laredo') + '</p>' +
+      '<h1 class="dash-title">' + esc(d.welcome || 'Welcome back') + who + '</h1>' +
+      (d.tagline ? '<p class="dash-sub">' + esc(d.tagline) + '</p>' : '') +
+      '</div><div class="dash-actions">' + serverPillHtml() + '</div></div>';
+  }
+
+  function dashNav(me) {
+    var tabs = [['overview', 'Overview'], ['inventory', 'Inventory'], ['applications', 'Applications'], ['server', 'Server']];
+    return '<nav class="dash-nav" aria-label="Dashboard sections">' + tabs.map(function (t) {
+      return '<a href="#dashboard" data-dash-tab="' + t[0] + '"' + (state.dashTab === t[0] ? ' class="on"' : '') + '>' + t[1] + '</a>';
+    }).join('') + (me.isStaff ? '<a href="#panel">Staff panel</a>' : '') + '</nav>';
+  }
+
+  function rolePills(me) {
+    var out = '';
+    (me.roles || []).forEach(function (r) {
+      var colour = r.color ? '#' + ('000000' + r.color.toString(16)).slice(-6) : '';
+      out += '<span class="pill-2 role"' + (colour ? ' style="--rc:' + colour + '"' : '') + '>' + esc(r.name) + '</span>';
+    });
+    return out;
+  }
+
+  function heroCard(me) {
+    var inv = me.inventory || {};
+    var worn = (inv.owned || []).filter(function (i) { return i.id === inv.equipped; })[0];
+    var html = '<section class="dcard hero-card">' +
+      '<div class="avatar-ring"><img alt="" src="' + esc(me.user.avatar) + '"></div>' +
+      '<div class="hero-card-info"><p class="dcard-k">Signed in as</p>' +
+      '<p class="hc-name">' + esc(me.user.name) + '</p>' +
+      '<div class="hc-meta">';
+    if (me.isAdmin) html += '<span class="pill-2 ok">Staff admin</span>';
+    else if (me.isStaff) html += '<span class="pill-2 warn">Staff team</span>';
+    if (me.roblox) html += '<span class="pill-2 ok">Roblox linked</span>';
+    html += me.inGuild ? '<span class="pill-2">In the Discord</span>' : '<span class="pill-2 warn">Not in the Discord</span>';
+    if (worn) html += '<span class="pill-2">Wearing ' + esc(worn.name) + '</span>';
+    html += rolePills(me) + '</div>';
+    html += me.inGuild
+      ? '<p class="muted" style="margin-top:8px">Member of the Laredo Roleplay Discord</p>'
+      : '<p class="muted" style="margin-top:8px">You are not in our Discord yet. <a href="' + esc(CONFIG.discordInvite || '#') + '" target="_blank" rel="noopener noreferrer">Join here</a> so staff can check your roles.</p>';
+    html += '</div>';
+    html += '<button class="btn btn-small" id="signout" type="button">Sign out</button>';
+    return html + '</section>';
+  }
+
+  function checkinCard(me) {
+    var ci = me.checkin || {};
+    var streak = Number(ci.streak) || 0;
+    var pct = Math.min(100, Math.round((streak / 7) * 100));
+    var next = streak === 0 ? 'Check in today to start a streak.' : streak >= 7 ? 'Seven in a row. Keep it going.' : (7 - streak) + ' more day' + (7 - streak === 1 ? '' : 's') + ' for a full week.';
+    return '<section class="dcard"><div class="dcard-h"><h2>Shift check-in</h2><span class="dcard-k">Daily</span></div>' +
+      '<div class="checkin"><div class="checkin-ring" style="--fill:' + pct + '"><span><b>' + streak + '</b><small>day' + (streak === 1 ? '' : 's') + '</small></span></div>' +
+      '<div class="checkin-copy"><p><strong>' + esc(next) + '</strong></p><p class="muted">' + (ci.total || 0) + ' check-in' + (ci.total === 1 ? '' : 's') + ' in total. Three in a row earns the Regular badge, seven the Local badge.</p>' +
+      '<p><button class="btn btn-small btn-primary" id="checkin-btn" type="button"' + (ci.canCheckIn === false ? ' disabled' : '') + '>' + (ci.canCheckIn === false ? 'Checked in today' : 'Check in') + '</button></p></div></div></section>';
+  }
+
+  function serverCard(full) {
+    var srv = state.server;
+    if (!srv) {
+      return '<section class="dcard"><div class="dcard-h"><h2>The city</h2><span class="dcard-k">Live</span></div><p class="muted">Checking the server&hellip;</p></section>';
+    }
+    if (srv.error && !srv.live) {
+      return '<section class="dcard"><div class="dcard-h"><h2>The city</h2><span class="dcard-k">Live</span></div>' +
+        '<div class="server-num"><b>&mdash;</b><span>players right now</span></div>' +
+        '<p class="muted">The count could not be read just now. It usually comes back within a minute.</p></section>';
+    }
+    if (!srv.configured) {
+      return '<section class="dcard"><div class="dcard-h"><h2>The city</h2><span class="dcard-k">Live</span></div>' +
+        '<p class="muted">The live player count is not switched on yet. Staff can add an ER:LC server key in the staff panel, and the count appears here for everyone.</p></section>';
+    }
+    if (!srv.live) {
+      return '<section class="dcard"><div class="dcard-h"><h2>The city</h2><span class="dcard-k">Live</span></div>' +
+        '<div class="server-num"><b>0</b><span>players right now</span></div>' +
+        '<p class="muted">The server is not answering at the moment. It is probably closed, restarting, or the key needs checking.</p></section>';
+    }
+    var pct = srv.maxPlayers ? Math.round((srv.players / srv.maxPlayers) * 100) : 0;
+    var html = '<section class="dcard"><div class="dcard-h"><h2>The city</h2><span class="dcard-k"><span class="dotm" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:5px"></span>Live</span></div>' +
+      '<div class="server-num"><b>' + fmtNum(srv.players) + '</b><span>' + (srv.maxPlayers ? 'of ' + fmtNum(srv.maxPlayers) + ' players' : 'players right now') + '</span></div>';
+    if (srv.maxPlayers) html += '<div class="server-bar"><i style="width:' + Math.max(2, pct) + '%"></i></div>';
+    html += '<div class="server-meta">' +
+      (srv.joinCode ? '<span>Join code <b>' + esc(srv.joinCode) + '</b></span>' : '') +
+      (srv.updatedAt ? '<span>Updated <b>' + esc(fmtDate(srv.updatedAt)) + '</b></span>' : '') + '</div>';
+    if (full && srv.roster && srv.roster.length) {
+      html += '<div><p class="dcard-k" style="margin-bottom:6px">On duty</p><ul class="roster">' + srv.roster.slice(0, 40).map(function (p) {
+        return '<li><span class="r-dot"></span><span class="r-name">' + esc(p.name) + '</span>' +
+          (p.callsign ? '<span class="r-team">' + esc(p.callsign) + '</span>' : p.team ? '<span class="r-team">' + esc(p.team) + '</span>' : '') + '</li>';
+      }).join('') + '</ul></div>';
+    } else if (full) {
+      html += '<p class="muted">The key works, but the player list is not being shared for this server.</p>';
+    }
+    return html + '</section>';
+  }
+
+  function applicationsCard(apps) {
+    var html = '<section class="dcard"><div class="dcard-h"><h2>Your applications</h2><span class="dcard-k">' + apps.length + ' sent</span></div>';
+    if (!apps.length) {
+      html += '<p class="muted">You have not applied for anything yet. When you do, the decision shows up here.</p>';
+    } else {
+      html += '<ul class="app-list">' + apps.map(function (a) {
+        return '<li class="app-row"><span class="a-main"><strong>' + esc(a.typeLabel) + '</strong>' +
+          '<span class="a-date">Sent ' + esc(fmtDate(a.createdAt)) + '</span></span>' + tag(a.status) + '</li>' +
+          (a.decision && a.decision.note ? '<li class="app-row"><span class="a-main"><span class="a-date">Staff note: ' + esc(a.decision.note) + '</span></span></li>' : '');
+      }).join('') + '</ul>';
+    }
+    return html + '<div class="quick-grid"><a class="quick-link" href="#applications"><b>What is open</b><span>Departments and staff roles</span></a>' +
+      '<a class="quick-link" href="#rules"><b>The rules</b><span>Read before you apply</span></a></div></section>';
+  }
+
+  function robloxCard(me) {
+    var html = '<section class="dcard"><div class="dcard-h"><h2>Roblox</h2><span class="dcard-k">Account</span></div>';
+    if (me.roblox) {
+      html += '<p>Linked as <strong>' + esc(me.roblox.name) + '</strong> <span class="muted">(ID ' + esc(me.roblox.id) + ')</span></p>' +
+        '<p><button class="btn btn-small" id="unlink" type="button">Unlink</button></p>';
+    } else if (!me.robloxConfigured) {
+      html += '<p class="muted">Roblox linking is not switched on for this site yet. Once it is, you can link here and staff can see the account on your applications.</p>';
+    } else {
+      html += '<p>Link your Roblox account with Roblox&rsquo;s own sign in. We only receive your username and ID, never your password.</p>' +
+        '<p><a class="btn btn-primary btn-small" href="/api/auth/roblox/login">Link Roblox account</a></p>';
+    }
+    return html + '</section>';
+  }
+
+  function inventoryItemHtml(item, inv, canEquip) {
+    var owned = (inv.owned || []).some(function (x) { return x.id === item.id; });
+    var on = inv.equipped === item.id;
+    var rarity = item.rarity || 'common';
+    return '<div class="inv-item rarity-' + esc(rarity) + (owned ? ' owned' : ' locked') + (on ? ' is-on' : '') + '"' +
+      (owned && canEquip ? ' data-equip="' + esc(item.id) + '" tabindex="0" role="button"' : '') +
+      ' title="' + esc(item.hint || '') + '"><span class="inv-badge">' + esc(initials(item.name)) + '</span>' +
+      '<span class="inv-name">' + esc(item.name) + '</span></div>';
+  }
+
+  function inventoryCard(me, full) {
+    var inv = me.inventory || { owned: [] };
+    var catalogue = state.catalogue || inv.owned || [];
+    var ownedIds = (inv.owned || []).map(function (i) { return i.id; });
+    var html = '<section class="dcard"><div class="dcard-h"><h2>Inventory</h2><span class="dcard-k">' + ownedIds.length + ' of ' + (catalogue.length || ownedIds.length) + '</span></div>';
+    if (!ownedIds.length) {
+      html += '<p class="muted">Nothing here yet. Your Resident badge appears as soon as you sign in.</p>';
+    } else {
+      html += '<div class="inv-grid">' + (catalogue.length ? catalogue : inv.owned).map(function (item) {
+        return inventoryItemHtml(item, inv, true);
+      }).join('') + '</div>';
+      html += '<p class="inv-empty-note">' + (inv.equipped ? 'Tap the worn badge to put it away.' : 'Tap a badge to wear it next to your name.') + '</p>';
+    }
+    if (full) {
+      html += '<p class="inv-empty-note">Grey badges are still locked. They show what you can earn, or what staff can hand out during events. Nothing here is bought: it is all earned or given.</p>';
+    }
+    return html + '</section>';
+  }
+
+  function quickLinks(me) {
+    var html = '<section class="dcard"><div class="dcard-h"><h2>Shortcuts</h2><span class="dcard-k">Jump to</span></div><div class="quick-grid">' +
+      '<a class="quick-link" href="#departments"><b>Departments</b><span>Eight ways to play</span></a>' +
+      '<a class="quick-link" href="#announcements"><b>Announcements</b><span>From the Discord</span></a>' +
+      '<a class="quick-link" href="#shop"><b>Shop</b><span>Perks and extras</span></a>' +
+      '<a class="quick-link" href="#staff"><b>The team</b><span>Who runs the city</span></a>' +
+      '<a class="quick-link" href="#settings"><b>Settings</b><span>Look and display</span></a>';
+    if (me.isStaff) html += '<a class="quick-link" href="#panel"><b>Staff panel</b><span>Applications and settings</span></a>';
+    return html + '</div></section>';
+  }
+
+  function teamCard() {
+    var list = (state.team && state.team.members) || [];
+    var html = '<section class="dcard"><div class="dcard-h"><h2>The team</h2><span class="dcard-k">' + list.length + ' people</span></div>';
+    if (!list.length) {
+      html += '<p class="muted">The staff list is being put together. Say hello in the Discord ticket channel if you need anything.</p>';
+    } else {
+      html += '<div class="team-preview">' + list.slice(0, 8).map(function (m) {
+        var colour = m.color || (TEAM_INFO[m.team] || {}).color || '#F2701D';
+        return '<div class="pv" style="--mc:' + esc(colour) + '"><i>' + esc(initials(m.name)) + '</i><span>' + esc(m.name) + '</span></div>';
+      }).join('') + '</div>';
+    }
+    return html + '<p><a class="link-arrow" href="#staff">See the whole team</a></p></section>';
+  }
+
+  function dashboardBody(me, apps) {
+    var d = (state.settings && state.settings.dashboard) || {};
+    var showServer = d.showServer !== false, showTeam = d.showTeam !== false;
+    var showInv = d.showInventory !== false;
+    if (state.dashTab === 'inventory') {
+      return '<div class="dash-grid"><div class="dash-col">' + inventoryCard(me, true) + checkinCard(me) + '</div>' +
+        '<div class="dash-col">' + robloxCard(me) + (showServer ? serverCard(false) : '') + '</div></div>';
+    }
+    if (state.dashTab === 'applications') {
+      return '<div class="dash-grid"><div class="dash-col">' + applicationsCard(apps) + '</div>' +
+        '<div class="dash-col">' + '<section class="dcard"><div class="dcard-h"><h2>Before you apply</h2></div>' +
+        '<p class="muted">Read the rules, be honest, and answer in your own words. Staff read every application, and the decision lands on this page.</p>' +
+        '<div class="quick-grid"><a class="quick-link" href="#rules"><b>The rules</b><span>Two minutes, worth it</span></a>' +
+        '<a class="quick-link" href="#announcements"><b>Openings</b><span>Check the latest posts</span></a></div></section>' +
+        robloxCard(me) + '</div></div>';
+    }
+    if (state.dashTab === 'server') {
+      return '<div class="dash-grid"><div class="dash-col">' + serverCard(true) + '</div><div class="dash-col">' +
+        '<section class="dcard"><div class="dcard-h"><h2>How to join</h2></div>' +
+        '<p class="muted">Open Emergency Response: Liberty County on Roblox, then use the join code above when the server is up. If the count shows 0, nobody is on shift right now.</p>' +
+        '<p><a class="btn btn-small" href="https://www.roblox.com/games/2534724415/Emergency-Response-Liberty-County" target="_blank" rel="noopener noreferrer">Open the game</a></p></section>' +
+        (showServer ? checkinCard(me) : '') + '</div></div>';
+    }
+    return '<div class="dash-grid"><div class="dash-col">' + heroCard(me) +
+      (showInv ? inventoryCard(me, false) : '') + applicationsCard(apps) + '</div>' +
+      '<div class="dash-col">' + (showServer ? serverCard(false) : '') + checkinCard(me) + robloxCard(me) + quickLinks(me) +
+      (showTeam ? teamCard() : '') + '</div></div>';
+  }
+
+  function wireDashboard(el, me) {
+    var signout = $('#signout');
+    if (signout) signout.addEventListener('click', function () {
+      api('POST', '/auth/logout', {}).then(function () {
+        state.me = { loggedIn: false, robloxConfigured: me.robloxConfigured };
+        renderAccount(); checkMaintenance();
+        location.hash = 'home';
+      });
+    });
+    var unlink = $('#unlink');
+    if (unlink) unlink.addEventListener('click', function () {
+      unlink.disabled = true;
+      api('POST', '/roblox/unlink', {}).then(function () { return loadMe(true); }).then(renderDashboard);
+    });
+    var checkin = $('#checkin-btn');
+    if (checkin) checkin.addEventListener('click', function () {
+      checkin.disabled = true;
+      api('POST', '/me/checkin', {}).then(function () { return loadMe(true); }).then(renderDashboard, function (err) {
+        checkin.disabled = false;
+        var box = $('#dash-root');
+        if (box) box.insertAdjacentHTML('afterbegin', alertBox(err.message));
+      });
+    });
+    $$('[data-dash-tab]', el).forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        state.dashTab = a.getAttribute('data-dash-tab');
+        renderDashboard();
+      });
+    });
+    $$('[data-equip]', el).forEach(function (b) {
+      var go = function () {
+        var id = b.getAttribute('data-equip');
+        var next = (state.me && state.me.inventory && state.me.inventory.equipped === id) ? '' : id;
+        api('POST', '/me/inventory/equip', { item: next }).then(function () { return loadMe(true); }).then(renderDashboard);
+      };
+      b.addEventListener('click', go);
+      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+
   function renderDashboard() {
     var el = $('#dash-root');
-    el.innerHTML = '<p class="muted">Loading...</p>';
+    if (!el) return;
+    if (!dashPainted) { el.innerHTML = '<p class="muted">Loading your account&hellip;</p>'; }
     ensureData().then(function () {
       var me = state.me;
       var err = state.authError ? alertBox(AUTH_ERRORS[state.authError] || 'Sign in failed. Please try again.') : '';
       state.authError = '';
-      if (me.offline) { el.innerHTML = alertBox('Accounts are not switched on for this copy of the site.'); return; }
+      if (me.offline) {
+        el.innerHTML = dashHead(null) + alertBox('Accounts are not switched on for this copy of the site.');
+        dashPainted = false; hideBoot(); return;
+      }
       if (!me.loggedIn) {
-        el.innerHTML = err + '<div class="panel panel-wide"><h2 class="h2">Sign in</h2>' +
-          '<p>Sign in with Discord to apply, track your applications and link your Roblox account. We only read your Discord name, avatar and the roles you have in our server.</p>' +
-          '<p><a class="btn btn-primary" href="' + signInUrl('dashboard') + '">Sign in with Discord</a></p></div>';
-        return;
+        el.innerHTML = dashHead(null) + '<section class="dcard dash-signin"><h2>Sign in</h2>' + err +
+          '<p>Sign in with Discord to see your profile, your applications, your badges and the live count for the city. We only read your Discord name, avatar and the roles you have in our server.</p>' +
+          '<a class="btn btn-primary" href="' + signInUrl('dashboard') + '">Sign in with Discord</a>' +
+          '<p class="muted">No account is created and no password is stored.</p></section>';
+        dashPainted = false; hideBoot(); return;
       }
       api('GET', '/applications/mine').then(function (d) { return d.applications; }, function () { return []; }).then(function (apps) {
-        var html = err;
-        if (me.warning) html += alertBox(me.warning);
-        html += '<div class="dash-grid"><div class="stack">';
-
-        html += '<section class="panel"><div class="profile"><img class="profile-img" alt="" src="' + esc(me.user.avatar) + '"><div>' +
-          '<h2 class="h2">' + esc(me.user.name) + '</h2>';
-        html += me.inGuild
-          ? '<p class="muted">Member of the Laredo Roleplay Discord</p>'
-          : '<p class="muted">You are not in our Discord yet.</p><p><a class="btn btn-small" target="_blank" rel="noopener noreferrer" href="' + esc(CONFIG.discordInvite || '') + '">Join the Discord</a></p>';
-        html += '<p>' + (me.isAdmin ? '<span class="tag tag-ok">Staff admin</span> ' : '') + (me.isStaff ? '<span class="tag tag-wait">Staff team</span>' : '') + '</p>';
-        html += '</div></div><p><button class="btn btn-small" id="signout">Sign out</button></p></section>';
-
-        html += '<section class="panel"><h2 class="h2">Roblox account</h2>';
-        if (me.roblox) {
-          html += '<p>Linked as <strong>' + esc(me.roblox.name) + '</strong> <span class="muted">(ID ' + esc(me.roblox.id) + ')</span></p>' +
-            '<p><button class="btn btn-small" id="unlink">Unlink</button></p>';
-        } else if (!me.robloxConfigured) {
-          html += '<p class="muted">Roblox linking is not switched on yet.</p>';
-        } else {
-          html += '<p>Link your Roblox account with Roblox\'s own sign in. We only receive your username and ID, never your password.</p>' +
-            '<p><a class="btn btn-primary btn-small" href="/api/auth/roblox/login">Link Roblox account</a></p>';
-        }
-        html += '</section></div><div class="stack">';
-
-        if (me.isStaff) {
-          html += '<section class="panel panel-accent"><h2 class="h2">Staff tools</h2><p>Review applications' + (me.isAdmin ? ' and change website settings.' : '.') + '</p>' +
-            '<p><a class="btn btn-primary" href="#panel">Open staff panel</a></p></section>';
-        }
-        html += '<section class="panel"><h2 class="h2">Your applications</h2>';
-        if (!apps.length) {
-          html += '<p class="muted">You have not applied for anything yet.</p><p><a class="btn btn-small" href="#applications">See open applications</a></p>';
-        } else {
-          html += '<ul class="plain-list">' + apps.map(function (a) {
-            return '<li><div class="split"><strong>' + esc(a.typeLabel) + '</strong>' + tag(a.status) + '</div>' +
-              '<p class="muted">Sent ' + esc(fmtDate(a.createdAt)) + '</p>' +
-              (a.decision && a.decision.note ? '<p class="note">Staff note: ' + esc(a.decision.note) + '</p>' : '') + '</li>';
-          }).join('') + '</ul>';
-        }
-        html += '</section></div></div>';
+        var html = dashHead(me) + (err || '') + (me.warning ? alertBox(me.warning) : '') + dashNav(me) + dashboardBody(me, apps);
         el.innerHTML = html;
-
-        $('#signout').addEventListener('click', function () {
-          api('POST', '/auth/logout', {}).then(function () {
-            state.me = { loggedIn: false, robloxConfigured: me.robloxConfigured };
-            renderAccount(); checkMaintenance();
-            location.hash = 'home';
-          });
-        });
-        var unlink = $('#unlink');
-        if (unlink) unlink.addEventListener('click', function () {
-          unlink.disabled = true;
-          api('POST', '/roblox/unlink', {}).then(function () { return loadMe(true); }).then(renderDashboard);
-        });
+        dashPainted = true;
+        wireDashboard(el, me);
+        hideBoot();
       });
     });
+  }
+
+  /* -------------------------------------------------------------- staff page */
+  state.staffFilter = 'all';
+
+  function staffCard(m) {
+    var info = TEAM_INFO[m.team] || TEAM_INFO.moderator;
+    var colour = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(m.color || '') ? m.color : info.color;
+    var avatar = /^https:\/\//i.test(m.avatar || '')
+      ? '<img alt="" src="' + esc(m.avatar) + '" loading="lazy">'
+      : esc(initials(m.name));
+    return '<article class="member" style="--mc:' + esc(colour) + '"><span class="member-glow" aria-hidden="true"></span>' +
+      '<div class="member-top"><span class="member-av">' + avatar + '</span><div>' +
+      '<p class="member-name">' + esc(m.name) + '</p>' +
+      '<p class="member-title">' + esc(m.title || info.name) + '</p></div></div>' +
+      (m.bio ? '<p class="member-bio">' + esc(m.bio) + '</p>' : '') +
+      '<span class="member-team">' + esc(info.name) + '</span>' +
+      '<div class="member-foot"><span><span class="dotm"></span>' + esc(m.status || 'Active') + '</span>' +
+      (m.discord ? '<span>Discord ID ' + esc(m.discord) + '</span>' : '<span>' + esc(info.blurb || '') + '</span>') + '</div>' +
+      '</article>';
+  }
+
+  function drawStaff() {
+    var grid = $('#staff-team');
+    if (!grid) return;
+    var all = (state.team && state.team.members) || [];
+    var chips = $('#staff-chips');
+    var count = $('#staff-count');
+    var teams = TEAM_ORDER.filter(function (t) { return all.some(function (m) { return m.team === t; }); });
+    if (chips) {
+      chips.innerHTML = '<button type="button" class="chip' + (state.staffFilter === 'all' ? ' on' : '') + '" data-staff-filter="all">Everyone <span class="chip-n">' + all.length + '</span></button>' +
+        teams.map(function (t) {
+          var n = all.filter(function (m) { return m.team === t; }).length;
+          return '<button type="button" class="chip' + (state.staffFilter === t ? ' on' : '') + '" data-staff-filter="' + t + '">' + esc(TEAM_INFO[t].name) + ' <span class="chip-n">' + n + '</span></button>';
+        }).join('');
+      $$('[data-staff-filter]', chips).forEach(function (b) {
+        b.addEventListener('click', function () { state.staffFilter = b.getAttribute('data-staff-filter'); drawStaff(); });
+      });
+    }
+    var list = state.staffFilter === 'all' ? all : all.filter(function (m) { return m.team === state.staffFilter; });
+    if (count) count.textContent = list.length + (list.length === 1 ? ' person' : ' people');
+    if (!list.length) {
+      grid.innerHTML = '<div class="staff-empty"><strong>The team is being written up</strong>' +
+        '<p>Names are added in the staff panel. Once they are in, everyone shows here with their role and colour.</p>' +
+        '<a class="btn btn-small" href="' + esc(CONFIG.discordInvite || '#') + '" target="_blank" rel="noopener noreferrer">Ask in Discord</a></div>';
+      return;
+    }
+    var html = '';
+    if (state.staffFilter === 'all') {
+      teams.forEach(function (t) {
+        var group = all.filter(function (m) { return m.team === t; });
+        if (!group.length) return;
+        html += '<div class="team-heading"><h2>' + esc(TEAM_INFO[t].name) + '</h2><span>' + group.length + '</span></div>' + group.map(staffCard).join('');
+      });
+    } else {
+      html = list.map(staffCard).join('');
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderStaffPage() {
+    var hint = $('#staff-admin-hint');
+    if (hint) hint.hidden = !(state.me && state.me.isAdmin);
+    loadTeam().then(drawStaff, drawStaff);
   }
 
   /* ------------------------------------------------------------ application form */
@@ -681,27 +1102,46 @@
   /* -------------------------------------------------------------- staff panel */
   function renderPanel() {
     var el = $('#panel-root');
-    el.innerHTML = '<p class="muted">Loading...</p>';
+    if (!el) return;
     ensureData().then(function () {
       var me = state.me;
-      if (me.offline) { el.innerHTML = alertBox('The staff panel is not switched on for this copy of the site.'); return; }
+      if (me.offline) {
+        el.innerHTML = alertBox('The staff panel is not switched on for this copy of the site.');
+        hideBoot(); return;
+      }
       if (!me.loggedIn) {
-        el.innerHTML = '<div class="panel panel-wide"><h2 class="h2">Staff sign in</h2><p>Sign in with Discord. Access is checked against your roles in our server.</p>' +
-          '<p><a class="btn btn-primary" href="' + signInUrl('panel') + '">Sign in with Discord</a></p></div>';
-        return;
+        el.innerHTML = '<div class="dash-head"><div><p class="dash-kicker"><span class="live"></span>Staff only</p>' +
+          '<h1 class="dash-title">Staff panel</h1></div></div>' +
+          '<section class="dcard dash-signin"><h2>Staff sign in</h2><p>Sign in with Discord. Access is checked against your roles in our server, every time you open something private.</p>' +
+          '<a class="btn btn-primary" href="' + signInUrl('panel') + '">Sign in with Discord</a></section>';
+        hideBoot(); return;
       }
       if (!me.isStaff) {
-        el.innerHTML = alertBox('This area is for the staff team only.') + '<p><a class="btn" href="#dashboard">Back to dashboard</a></p>';
-        return;
+        el.innerHTML = '<div class="dash-head"><div><p class="dash-kicker"><span class="live"></span>Staff only</p><h1 class="dash-title">Staff panel</h1></div></div>' +
+          alertBox('This area is for the staff team only.') + '<p><a class="btn" href="#dashboard">Back to dashboard</a></p>';
+        hideBoot(); return;
       }
-      var tabs = '<div class="tabs" role="tablist"><button class="tab' + (state.panelTab === 'applications' ? ' on' : '') + '" data-tab="applications" role="tab">Applications</button>' +
-        (me.isAdmin ? '<button class="tab' + (state.panelTab === 'settings' ? ' on' : '') + '" data-tab="settings" role="tab">Settings</button>' : '') + '</div>';
-      el.innerHTML = tabs + '<div id="panel-body"></div>';
+      var tabs = [['applications', 'Applications']];
+      if (me.isAdmin) tabs.push(['settings', 'Site settings'], ['team', 'Staff page'], ['members', 'Members']);
+      if (tabs.map(function (t) { return t[0]; }).indexOf(state.panelTab) === -1) state.panelTab = 'applications';
+
+      var html = '<div class="dash-head"><div><p class="dash-kicker"><span class="live"></span>Staff only</p>' +
+        '<h1 class="dash-title">Staff panel</h1><p class="dash-sub">' +
+        (me.isAdmin ? 'Applications, the public staff page, awards and how the site looks.' : 'Review applications from the queue. Settings are for leadership.') +
+        '</p></div><div class="dash-actions"><a class="dash-pill" href="#dashboard">Back to dashboard</a></div></div>' +
+        '<div class="tabs" role="tablist">' + tabs.map(function (t) {
+          return '<button class="tab' + (state.panelTab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '" role="tab">' + t[1] + '</button>';
+        }).join('') + '</div><div id="panel-body"></div>';
+      el.innerHTML = html;
       $$('.tab', el).forEach(function (t) {
         t.addEventListener('click', function () { state.panelTab = t.getAttribute('data-tab'); renderPanel(); });
       });
-      if (state.panelTab === 'settings' && me.isAdmin) panelSettings($('#panel-body'));
-      else panelApplications($('#panel-body'), { status: 'pending', type: '' });
+      var body = $('#panel-body');
+      if (state.panelTab === 'settings' && me.isAdmin) panelSettings(body);
+      else if (state.panelTab === 'team' && me.isAdmin) panelTeam(body);
+      else if (state.panelTab === 'members' && me.isAdmin) panelMembers(body);
+      else panelApplications(body, { status: 'pending', type: '' });
+      hideBoot();
     });
   }
 
@@ -771,7 +1211,12 @@
     function checkbox(id, label, on) {
       return '<label class="check"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '> <span>' + esc(label) + '</span></label>';
     }
-    var html = '<form id="settings-form" class="form" novalidate>';
+    function themeRow(key, title, blurb, colour) {
+      return '<div class="theme-row"><div class="th-main"><span class="sw" style="background:' + colour + '"></span>' +
+        '<span><strong>' + esc(title) + '</strong><small>' + esc(blurb) + '</small></span></div>' +
+        '<label class="check"><input type="checkbox" id="s-theme-' + key + '"' + (s.themes[key] !== false ? ' checked' : '') + '> <span>Allow</span></label></div>';
+    }
+    var html = '<form id="settings-form" class="form" novalidate><input type="hidden" id="s-extra" value="1">';
 
     html += '<section class="panel"><h2 class="h2">Site notice</h2><p class="muted">A strip across the top of every page.</p>' + checkbox('s-notice-on', 'Show the notice', s.notice.enabled) +
       '<div class="field"><label for="s-notice-text">Text</label><input type="text" id="s-notice-text" maxlength="200" value="' + esc(s.notice.text) + '"></div>' +
@@ -781,9 +1226,22 @@
       checkbox('s-maint-on', 'Maintenance mode is on', s.maintenance.enabled) +
       '<div class="field"><label for="s-maint-msg">Message</label><input type="text" id="s-maint-msg" maxlength="300" value="' + esc(s.maintenance.message) + '"></div></section>';
 
-    html += '<section class="panel"><h2 class="h2">Appearance</h2><div class="field"><label for="s-theme">Default look for new visitors</label><select id="s-theme"><option value="normal">Dark</option><option value="light">Light</option><option value="halloween">Halloween</option></select></div></section>';
+    html += '<section class="panel"><h2 class="h2">Looks</h2><p class="muted">Switch a look off and nobody can use it; anyone who had it saved falls back to the default. Leave at least one on.</p>' +
+      themeRow('dark', 'Dark', 'Navy and sunset. The house look.', '#0A1020') +
+      themeRow('light', 'Light', 'Paper and ink for daylight.', '#F4EFE4') +
+      themeRow('halloween', 'Halloween', 'Orange and purple, bats and a pumpkin.', '#8B5CF6') +
+      themeRow('christmas', 'Christmas', 'Ice blue, pine and brass, with snow.', '#E9B44C') +
+      '<div class="field" style="margin-top:14px"><label for="s-theme">Default look for new visitors</label><select id="s-theme"><option value="normal">Dark</option><option value="light">Light</option><option value="halloween">Halloween</option><option value="christmas">Christmas</option></select></div></section>';
 
-    html += '<section class="panel"><h2 class="h2">Applications</h2><p class="muted">Closed applications cannot be submitted.</p>' +
+    html += '<section class="panel"><h2 class="h2">Dashboard wording</h2><p class="muted">What every signed-in member sees at the top of their dashboard.</p>' +
+      '<div class="field"><label for="s-dash-kicker">Small line above the title</label><input type="text" id="s-dash-kicker" maxlength="30" value="' + esc(s.dashboard.kicker) + '"></div>' +
+      '<div class="field"><label for="s-dash-welcome">Title</label><input type="text" id="s-dash-welcome" maxlength="40" value="' + esc(s.dashboard.welcome) + '"></div>' +
+      '<div class="field"><label for="s-dash-tagline">Tagline</label><input type="text" id="s-dash-tagline" maxlength="160" value="' + esc(s.dashboard.tagline) + '"></div>' +
+      '<div class="theme-row"><div class="th-main"><span><strong>Live server card</strong><small>Player count, join code and who is on duty.</small></span></div>' + checkbox('s-show-server', 'Show', s.dashboard.showServer !== false) + '</div>' +
+      '<div class="theme-row"><div class="th-main"><span><strong>Inventory and badges</strong><small>What each member has earned or been given.</small></span></div>' + checkbox('s-show-inv', 'Show', s.dashboard.showInventory !== false) + '</div>' +
+      '<div class="theme-row"><div class="th-main"><span><strong>Team strip</strong><small>A short list of staff, linking to the staff page.</small></span></div>' + checkbox('s-show-team', 'Show', s.dashboard.showTeam !== false) + '</div></section>';
+
+    html += '<section class="panel"><h2 class="h2">Applications</h2><p class="muted">Closed applications cannot be submitted. Opening one for an hour is a good way to catch up quietly.</p>' +
       Object.keys(APP_TYPES).map(function (k) { return checkbox('s-app-' + k, APP_TYPES[k] + ' is open', s.applications[k].open); }).join('') + '</section>';
 
     html += '<section class="panel"><h2 class="h2">Departments</h2><p class="muted">A department shows as open once it is ticked and has an invite.</p>' +
@@ -793,14 +1251,41 @@
           '<div class="field"><label for="s-inv-' + d[0] + '">Discord invite</label><input type="text" id="s-inv-' + d[0] + '" maxlength="80" placeholder="https://discord.gg/..." value="' + esc(c.invite) + '"></div></div>';
       }).join('') + '</section>';
 
-    html += '<section class="panel"><h2 class="h2">Shop prices (Robux)</h2><div class="price-grid">' +
+    html += '<section class="panel"><h2 class="h2">Shop prices (Robux)</h2><p class="muted">Leave the shop as it is, or close it while you change prices.</p>' +
+      checkbox('s-shop-open', 'The shop is open', s.shopOpen !== false) + '<div class="price-grid">' +
       PRICE_FIELDS.map(function (p) {
         return '<div class="field"><label for="s-price-' + p[0] + '">' + esc(p[1]) + '</label><input type="number" min="0" max="1000000" id="s-price-' + p[0] + '" value="' + esc(s.prices[p[0]]) + '"></div>';
       }).join('') + '</div></section>';
 
     html += '<div id="settings-msg"></div><div><button class="btn btn-primary" type="submit">Save settings</button></div></form>';
+
+    html += '<section class="panel" style="margin-top:22px"><h2 class="h2">ER:LC server key</h2>' +
+      '<p class="muted">Paste the server key from <a href="https://api.policeroleplay.community" target="_blank" rel="noopener noreferrer">the ER:LC API</a> and the live player count appears on the home page and every dashboard. It is stored in your KV store and never sent back to a browser.</p>' +
+      '<form id="erlc-form" class="form" novalidate><div class="field"><label for="s-erlc">Server key</label>' +
+      '<input type="text" id="s-erlc" maxlength="120" autocomplete="off" placeholder="' + (s.erlcConfigured ? 'A key is set. Paste a new one to replace it.' : 'Paste the server key') + '"></div>' +
+      '<div id="erlc-msg"></div><div class="btn-row"><button class="btn btn-primary" type="submit">Save key</button>' +
+      '<button class="btn" type="button" id="erlc-clear">Remove key</button></div></form></section>';
+
     body.innerHTML = html;
     $('#s-theme').value = s.defaultTheme;
+
+    function readExtra() {
+      var has = $('#s-extra') && $('#s-extra').value === '1';
+      var extra = {};
+      if (!has) return extra;
+      extra.themes = {};
+      ['dark', 'light', 'halloween', 'christmas'].forEach(function (k) { extra.themes[k] = $('#s-theme-' + k).checked; });
+      extra.dashboard = {
+        kicker: $('#s-dash-kicker').value,
+        welcome: $('#s-dash-welcome').value,
+        tagline: $('#s-dash-tagline').value,
+        showServer: $('#s-show-server').checked,
+        showInventory: $('#s-show-inv').checked,
+        showTeam: $('#s-show-team').checked
+      };
+      extra.shopOpen = $('#s-shop-open').checked;
+      return extra;
+    }
 
     $('#settings-form').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -810,6 +1295,10 @@
         defaultTheme: $('#s-theme').value,
         applications: {}, departments: {}, prices: {}
       };
+      var extra = readExtra();
+      if (extra.themes && Object.keys(extra.themes).some(function (k) { return extra.themes[k]; })) data.themes = extra.themes;
+      if (extra.dashboard) data.dashboard = extra.dashboard;
+      if (extra.shopOpen !== undefined) data.shopOpen = extra.shopOpen;
       Object.keys(APP_TYPES).forEach(function (k) { data.applications[k] = { open: $('#s-app-' + k).checked }; });
       DEPTS.forEach(function (d) { data.departments[d[0]] = { open: $('#s-dept-' + d[0]).checked, invite: $('#s-inv-' + d[0]).value }; });
       PRICE_FIELDS.forEach(function (p) { data.prices[p[0]] = $('#s-price-' + p[0]).value; });
@@ -829,6 +1318,149 @@
         btn.disabled = false;
         $('#settings-msg').innerHTML = alertBox(err.message);
       });
+    });
+
+    function saveKey(value) {
+      api('PUT', '/admin/erlc-key', { key: value }).then(function () {
+        $('#erlc-msg').innerHTML = alertBox(value ? 'Key saved. The count updates within a few seconds.' : 'Key removed.', 'ok');
+        $('#s-erlc').value = '';
+        return loadServer(true);
+      }, function (err) { $('#erlc-msg').innerHTML = alertBox(err.message); });
+    }
+    $('#erlc-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      saveKey($('#s-erlc').value.trim());
+    });
+    $('#erlc-clear').addEventListener('click', function () { saveKey(''); });
+  }
+
+  /* --------------------------------------------------- staff page editor */
+  var BLANK_MEMBER = { id: '', name: '', title: '', team: 'moderator', color: '', discord: '', avatar: '', bio: '' };
+
+  function readTeamRows() {
+    var rows = $$('[data-team-row]');
+    if (!rows.length) return state.editTeam || [];
+    return rows.map(function (row) {
+      var get = function (name) {
+        var input = $('[data-tm="' + name + '"]', row);
+        return input ? input.value : '';
+      };
+      return {
+        id: row.getAttribute('data-team-row') || '',
+        name: get('name'), title: get('title'), team: get('team'), color: get('color'),
+        discord: get('discord'), avatar: get('avatar'), bio: get('bio')
+      };
+    });
+  }
+
+  function panelTeam(body) {
+    body.innerHTML = '<p class="muted">Loading the staff page&hellip;</p>';
+    api('GET', '/admin/team').then(function (d) {
+      state.editTeam = (d.members || []).map(function (m) { return Object.assign({}, BLANK_MEMBER, m); });
+      drawTeamEditor(body);
+    }, function (err) { body.innerHTML = alertBox(err.message); });
+  }
+
+  function drawTeamEditor(body, message) {
+    var list = state.editTeam || [];
+    var html = '<section class="panel"><div class="split"><div><h2 class="h2">Staff page</h2>' +
+      '<p class="muted">These people appear on <a href="#staff">the staff page</a>. Leave a name empty to drop the row. Order here is the order on the page.</p></div>' +
+      '<div class="panel-tools"><button class="btn btn-small" type="button" id="team-add">Add person</button>' +
+      '<button class="btn btn-small btn-primary" type="button" id="team-save">Save the page</button></div></div><div id="team-msg">' +
+      (message || '') + '</div><div class="edit-list" id="team-rows">';
+
+    if (!list.length) {
+      html += '<p class="muted">Nobody is on the page yet. Add the first person, or paste a whole team in below.</p>';
+    }
+    list.forEach(function (m, i) {
+      html += '<div class="edit-row" data-team-row="' + esc(m.id || '') + '">' +
+        '<span class="drag" aria-hidden="true">' + (i + 1) + '</span>' +
+        '<div class="col"><input type="text" data-tm="name" maxlength="40" placeholder="Name" value="' + esc(m.name) + '">' +
+        '<input type="text" data-tm="title" maxlength="48" placeholder="Role, e.g. Head of Staff" value="' + esc(m.title) + '"></div>' +
+        '<div class="col"><input type="text" data-tm="discord" maxlength="25" placeholder="Discord ID (optional)" value="' + esc(m.discord) + '">' +
+        '<input type="text" data-tm="avatar" maxlength="300" placeholder="Avatar image link (optional, https://)" value="' + esc(m.avatar) + '"></div>' +
+        '<div class="col"><select data-tm="team">' + TEAM_ORDER.map(function (t) {
+          return '<option value="' + t + '"' + (m.team === t ? ' selected' : '') + '>' + esc(TEAM_INFO[t].name) + '</option>';
+        }).join('') + '</select><input class="swatch-in" type="color" data-tm="color" value="' + esc(m.color || (TEAM_INFO[m.team] || TEAM_INFO.moderator).color) + '" aria-label="Name colour"></div>' +
+        '<div class="btn-row rm"><button class="btn btn-small" type="button" data-team-up="' + i + '" aria-label="Move up">&uarr;</button>' +
+        '<button class="btn btn-small" type="button" data-team-down="' + i + '" aria-label="Move down">&darr;</button>' +
+        '<button class="btn btn-small" type="button" data-team-rm="' + i + '">Remove</button></div>' +
+        '<textarea data-tm="bio" maxlength="300" rows="2" placeholder="One line about them (optional)">' + esc(m.bio) + '</textarea>' +
+        '</div>';
+    });
+    html += '</div><div class="split" style="margin-top:16px"><p class="muted small">Changes are live on the staff page the moment you save.</p>' +
+      '<button class="btn btn-small btn-primary" type="button" id="team-save-2">Save the page</button></div></section>';
+    body.innerHTML = html;
+
+    $('#team-add').addEventListener('click', function () {
+      state.editTeam = readTeamRows().concat([Object.assign({}, BLANK_MEMBER, { id: '' })]);
+      drawTeamEditor(body, '');
+    });
+    $$('[data-team-rm]', body).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var rows = readTeamRows();
+        rows.splice(Number(b.getAttribute('data-team-rm')), 1);
+        state.editTeam = rows;
+        drawTeamEditor(body, '');
+      });
+    });
+    $$('[data-team-up]', body).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = Number(b.getAttribute('data-team-up'));
+        var rows = readTeamRows();
+        if (i > 0) { var t = rows[i - 1]; rows[i - 1] = rows[i]; rows[i] = t; }
+        state.editTeam = rows; drawTeamEditor(body, '');
+      });
+    });
+    $$('[data-team-down]', body).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = Number(b.getAttribute('data-team-down'));
+        var rows = readTeamRows();
+        if (i < rows.length - 1) { var t = rows[i + 1]; rows[i + 1] = rows[i]; rows[i] = t; }
+        state.editTeam = rows; drawTeamEditor(body, '');
+      });
+    });
+    var save = function () {
+      var members = readTeamRows().filter(function (m) { return String(m.name || '').trim(); });
+      api('PUT', '/admin/team', { members: members }).then(function (res) {
+        teamP = null;
+        state.editTeam = (res.team.members || []).map(function (m) { return Object.assign({}, BLANK_MEMBER, m); });
+        drawTeamEditor(body, alertBox('Saved. ' + members.length + ' ' + (members.length === 1 ? 'person is' : 'people are') + ' on the staff page.', 'ok'));
+      }, function (err) { $('#team-msg').innerHTML = alertBox(err.message); });
+    };
+    $('#team-save').addEventListener('click', save);
+    $('#team-save-2').addEventListener('click', save);
+  }
+
+  /* --------------------------------------------------- member awards */
+  function panelMembers(body) {
+    var grants = (state.catalogue || []).filter(function (i) { return i.kind === 'grant'; });
+    body.innerHTML = '<section class="panel"><h2 class="h2">Give a badge</h2>' +
+      '<p class="muted">Look someone up by Discord ID and tick what they should have. Badges show on their dashboard and in their inventory. Nothing is ever taken away by accident: untick to remove.</p>' +
+      '<div class="panel-tools"><input type="text" id="m-id" maxlength="25" inputmode="numeric" placeholder="Discord ID, e.g. 123456789012345678">' +
+      '<button class="btn btn-small btn-primary" type="button" id="m-lookup">Look up</button></div>' +
+      '<div id="m-result" style="margin-top:14px"></div></section>' +
+      '<section class="panel" style="margin-top:18px"><h2 class="h2">What can be given</h2><div class="inv-grid">' +
+      (grants.length ? grants.map(function (i) {
+        return '<div class="inv-item rarity-' + esc(i.rarity) + '"><span class="inv-badge">' + esc(initials(i.name)) + '</span><span class="inv-name">' + esc(i.name) + '</span></div>';
+      }).join('') : '<p class="muted">The badge list could not be loaded.</p>') + '</div></section>';
+
+    $('#m-lookup').addEventListener('click', function () {
+      var id = $('#m-id').value.trim();
+      var out = $('#m-result');
+      out.innerHTML = '<p class="muted">Looking up&hellip;</p>';
+      api('GET', '/admin/member?id=' + encodeURIComponent(id)).then(function (d) {
+        out.innerHTML = '<p>Badges for <strong>' + esc(id) + '</strong></p><div id="m-items">' + grants.map(function (i) {
+          var on = (d.extra || []).indexOf(i.id) !== -1;
+          return '<label class="check" style="margin:6px 0"><input type="checkbox" data-grant="' + esc(i.id) + '"' + (on ? ' checked' : '') + '> <span>' + esc(i.name) + ' <span class="muted">(' + esc(i.rarity) + ')</span></span></label>';
+        }).join('') + '</div><div id="m-msg"></div><p><button class="btn btn-small btn-primary" type="button" id="m-save">Save badges</button></p>';
+        $('#m-save').addEventListener('click', function () {
+          var items = $$('[data-grant]', $('#m-items')).filter(function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-grant'); });
+          api('PUT', '/admin/member/items', { userId: id, items: items }).then(function () {
+            $('#m-msg').innerHTML = alertBox('Saved.', 'ok');
+          }, function (err) { $('#m-msg').innerHTML = alertBox(err.message); });
+        });
+      }, function (err) { out.innerHTML = alertBox(err.message); });
     });
   }
 
@@ -860,6 +1492,76 @@
     }).catch(function () {
       box.innerHTML = '<p class="muted">The latest announcements are in our Discord.</p>';
     });
+  }
+
+  /* ------------------------------------------------------------ boot screen */
+  var bootAt = 0, bootSeq = 0;
+  function showBoot(text) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    var t = document.getElementById('boot-text');
+    if (t && text) t.textContent = text;
+    b.hidden = false;
+    b.classList.remove('closing');
+    bootSeq += 1;
+    bootAt = Date.now();
+  }
+  function hideBoot() {
+    var b = document.getElementById('boot');
+    if (!b || b.hidden) return;
+    var mine = bootSeq;
+    var wait = Math.max(0, 900 - (Date.now() - bootAt));
+    setTimeout(function () {
+      if (mine !== bootSeq) return;
+      b.classList.add('closing');
+      setTimeout(function () { if (mine === bootSeq) b.hidden = true; }, 420);
+    }, wait);
+  }
+
+  /* --------------------------------------------------------------- carousel */
+  var crsIndex = 0, crsTimer = 0;
+  function goSlide(i) {
+    var slides = $$('.hero-slide');
+    if (!slides.length) return;
+    crsIndex = ((i % slides.length) + slides.length) % slides.length;
+    slides.forEach(function (sl, n) {
+      var on = n === crsIndex;
+      sl.classList.toggle('is-on', on);
+      if (on) sl.removeAttribute('aria-hidden'); else sl.setAttribute('aria-hidden', 'true');
+    });
+    $$('[data-crs-dot]').forEach(function (d, n) { d.classList.toggle('is-on', n === crsIndex); });
+  }
+  function restartCarousel() {
+    if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; }
+    if (!document.getElementById('hero-slides')) return;
+    if (state.prefs.carousel !== 'on' || motionReduced()) return;
+    crsTimer = setInterval(function () { goSlide(crsIndex + 1); }, 7000);
+  }
+
+  /* ----------------------------------------------------------- look menu */
+  function closeLookMenu() {
+    var pop = $('#look-pop'), btn = $('#look-btn');
+    if (pop) pop.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  function wireLookMenu() {
+    var btn = $('#look-btn'), pop = $('#look-pop');
+    if (!btn || !pop) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = pop.hidden;
+      pop.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    if (document.addEventListener) {
+      document.addEventListener('click', function (e) {
+        if (pop.hidden) return;
+        if (pop.contains && pop.contains(e.target)) return;
+        if (btn.contains && btn.contains(e.target)) return;
+        closeLookMenu();
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLookMenu(); });
+    }
   }
 
   /* ------------------------------------------------------------ small touches */
@@ -902,6 +1604,28 @@
 
   function initUi() {
     root.classList.add('js');
+    wireLookMenu();
+
+    $$('[data-crs]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        goSlide(crsIndex + (b.getAttribute('data-crs') === 'next' ? 1 : -1));
+        restartCarousel();
+      });
+    });
+    $$('[data-crs-dot]').forEach(function (d, n) {
+      d.addEventListener('click', function () { goSlide(n); restartCarousel(); });
+    });
+    var stage = document.getElementById('hero-slides');
+    if (stage) {
+      stage.addEventListener('pointerenter', function () { if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; } });
+      stage.addEventListener('pointerleave', function () { restartCarousel(); });
+      stage.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') goSlide(crsIndex + 1);
+        if (e.key === 'ArrowLeft') goSlide(crsIndex - 1);
+      });
+    }
+    goSlide(0);
+    restartCarousel();
 
     var menuBtn = $('#menu-btn');
     var nav = $('#nav');

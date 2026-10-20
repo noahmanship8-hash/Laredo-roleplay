@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SETTINGS } from '../src/core.mjs';
-import { SITE, STAFF, HEAD, GUILD_MEMBERS, setup, Browser } from './helpers.mjs';
+import { DEFAULT_SETTINGS, createApi } from '../src/core.mjs';
+import { SITE, STAFF, HEAD, GUILD_MEMBERS, DISCORD_USERS, setup, Browser, FakeStore } from './helpers.mjs';
 
 const goodStaffApp = {
   roblox: 'RobloxMember', age: 17, timezone: 'CST, evenings', hours: '10 to 20 hours',
@@ -231,4 +231,116 @@ test('missing configuration fails politely instead of crashing', async () => {
   assert.equal(me.loggedIn, false);
   const unknown = await new Browser(handle).req('GET', '/api/nothing-here');
   assert.equal(unknown.status, 404);
+});
+
+// ---------------------------------------------------------------- the dashboard extras
+test('live server, staff team, inventory and themes', async () => {
+  const { handle } = setup();
+  const member = new Browser(handle); await member.login('code-member');
+  const head = new Browser(handle); await head.login('code-head');
+
+  // no ER:LC key yet: the site says so instead of guessing
+  const off = await (await new Browser(handle).req('GET', '/api/server')).json();
+  assert.equal(off.configured, false);
+  assert.equal(off.live, false);
+
+  // the staff page is public and starts empty
+  assert.deepEqual((await (await new Browser(handle).req('GET', '/api/team')).json()).members, []);
+
+  // only an admin can save the staff page, and bad values are refused
+  assert.equal((await member.req('PUT', '/api/admin/team', { body: { members: [] } })).status, 403);
+  assert.equal((await head.req('PUT', '/api/admin/team', { body: { members: [{ name: 'A', color: 'red' }] } })).status, 400);
+  const saved = await head.req('PUT', '/api/admin/team', {
+    body: {
+      members: [
+        { name: 'Casey', title: 'Head Moderator', team: 'moderator', color: '#FF2638', bio: 'Reads every report.' },
+        { name: '   ', title: 'Dropped because there is no name' },
+        { name: 'Riley', team: 'not-a-team' }
+      ]
+    }
+  });
+  assert.equal(saved.status, 200);
+  const team = (await (await new Browser(handle).req('GET', '/api/team')).json()).members;
+  assert.equal(team.length, 2);
+  assert.equal(team[0].name, 'Casey');
+  assert.equal(team[1].team, 'moderator'); // an unknown team falls back rather than breaking the page
+
+  // themes: at least one must stay on, and the default look must be one of them
+  assert.equal((await head.req('PUT', '/api/admin/settings', { body: { themes: { dark: false, light: false, halloween: false, christmas: false } } })).status, 400);
+  assert.equal((await head.req('PUT', '/api/admin/settings', { body: { themes: { dark: false } } })).status, 400); // dark is the default look
+  const themed = await (await head.req('PUT', '/api/admin/settings', { body: { defaultTheme: 'christmas', themes: { christmas: true, dark: true, light: true, halloween: false } } })).json();
+  assert.equal(themed.settings.themes.halloween, false);
+  assert.equal(themed.settings.defaultTheme, 'christmas');
+  const pub = await (await new Browser(handle).req('GET', '/api/settings')).json();
+  assert.equal(pub.themes.christmas, true);
+
+  // dashboard wording is trimmed and has a sensible fallback
+  const words = await (await head.req('PUT', '/api/admin/settings', { body: { dashboard: { welcome: '  ', kicker: 'Shift board', tagline: 'Hi' } } })).json();
+  assert.equal(words.settings.dashboard.welcome, 'Welcome back');
+  assert.equal(words.settings.dashboard.kicker, 'Shift board');
+
+  // a member's inventory, equipping and the daily check-in
+  const inv = await (await member.req('GET', '/api/me')).json();
+  assert.deepEqual(inv.inventory.owned.map((i) => i.id), ['resident']);
+  assert.equal((await member.req('POST', '/api/me/inventory/equip', { body: { item: 'founder' } })).status, 403);
+  assert.equal((await member.req('POST', '/api/me/inventory/equip', { body: { item: 'resident' } })).status, 200);
+  assert.equal((await member.me()).inventory.equipped, 'resident');
+
+  const first = await (await member.req('POST', '/api/me/checkin', { body: {} })).json();
+  assert.deepEqual([first.streak, first.already], [1, false]);
+  const again = await (await member.req('POST', '/api/me/checkin', { body: {} })).json();
+  assert.deepEqual([again.streak, again.already], [1, true]);
+
+  // staff awards: admins only, and only the badges meant for giving out
+  assert.equal((await member.req('PUT', '/api/admin/member/items', { body: { userId: '100', items: ['gold_star'] } })).status, 403);
+  assert.equal((await head.req('PUT', '/api/admin/member/items', { body: { userId: '100', items: ['nope'] } })).status, 400);
+  assert.equal((await head.req('PUT', '/api/admin/member/items', { body: { userId: '100', items: ['gold_star'] } })).status, 200);
+  assert.equal((await member.me()).inventory.owned.some((i) => i.id === 'gold_star'), true);
+});
+
+test('the ER:LC key is admin only and turns the live count on', async () => {
+  const calls = [];
+  const handle = createApi({
+    store: new FakeStore(),
+    env: { SESSION_SECRET: 'x'.repeat(40), DISCORD_CLIENT_ID: 'cid', DISCORD_CLIENT_SECRET: 'csecret', DISCORD_BOT_TOKEN: 'BOT' },
+    now: () => 1_800_000_000_000,
+    fetch: async (url, init = {}) => {
+      calls.push(String(url));
+      const u = String(url);
+      if (u === 'https://discord.com/api/oauth2/token') {
+        const code = new URLSearchParams(String(init.body)).get('code');
+        return new Response(JSON.stringify({ access_token: 'tok:' + code }), { status: 200 });
+      }
+      if (u === 'https://discord.com/api/v10/users/@me') {
+        const code = String(init.headers.Authorization).replace('Bearer tok:', '');
+        return new Response(JSON.stringify(DISCORD_USERS[code]), { status: 200 });
+      }
+      if (u.includes('/guilds/') && u.includes('/members/')) {
+        return new Response(JSON.stringify({ roles: u.endsWith('/300') ? ['1559256083292495962'] : [] }), { status: 200 });
+      }
+      if (u.includes('/guilds/') && u.endsWith('/roles')) return new Response(JSON.stringify([]), { status: 200 });
+      if (u.endsWith('/server')) {
+        assert.equal(init.headers['Server-Key'], 'abcd1234efgh');
+        return new Response(JSON.stringify({ Name: 'Laredo', CurrentPlayers: 22, MaxPlayers: 40, JoinKey: 'LAREDO1' }), { status: 200 });
+      }
+      if (u.endsWith('/server/players')) {
+        return new Response(JSON.stringify([{ Player: 'Avery_TX:123', Team: 'Police', Callsign: 'LPD-4' }]), { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    }
+  });
+  const head = new Browser(handle); await head.login('code-head');
+  const member = new Browser(handle); await member.login('code-member');
+
+  assert.equal((await member.req('PUT', '/api/admin/erlc-key', { body: { key: 'abcd1234efgh' } })).status, 403);
+  assert.equal((await head.req('PUT', '/api/admin/erlc-key', { body: { key: 'no spaces allowed!' } })).status, 400);
+  assert.equal((await head.req('PUT', '/api/admin/erlc-key', { body: { key: 'abcd1234efgh' } })).status, 200);
+
+  const live = await (await new Browser(handle).req('GET', '/api/server')).json();
+  assert.equal(live.live, true);
+  assert.equal(live.players, 22);
+  assert.equal(live.maxPlayers, 40);
+  assert.equal(live.joinCode, 'LAREDO1');
+  assert.deepEqual(live.roster.map((p) => p.name), ['Avery_TX']); // "Name:Id" is tidied up
+  assert.ok(calls.some((u) => u.startsWith('https://api.erlc.gg/v1/server')));
 });

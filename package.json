@@ -4,7 +4,8 @@
   "type": "module",
   "version": "2.1.0",
   "scripts": {
-    "test": "node --test tests/api.test.mjs tests/frontend.test.mjs tests/cloudflare.test.mjs"
+    "test": "node --test tests/api.test.mjs tests/frontend.test.mjs tests/cloudflare.test.mjs",
+    "preview": "node scripts/preview-server.mjs"
   }
 }
 

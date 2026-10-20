@@ -12,9 +12,40 @@ const ADMIN_ROLES_DEFAULT = [
   '1558209180723060808'  // Discord Developer
 ]; // these can also change website settings
 
-const THEMES = ['normal', 'light', 'halloween']; // normal means dark
+const THEMES = ['normal', 'light', 'halloween', 'christmas']; // normal means dark
+
+export const THEME_KEYS = ['dark', 'light', 'halloween', 'christmas'];
 
 export const DEPT_IDS = ['lpd', 'wcso', 'dps', 'lfd', 'fbi', 'bp', 'swat', 'dot'];
+
+// The teams shown on the staff page. Colours and wording live in public/site.js.
+export const TEAM_IDS = [
+  'ownership', 'executive', 'community', 'discord_dev', 'server_dev',
+  'internal_affairs', 'management', 'supervisory', 'administrator', 'moderator'
+];
+
+// Things a member can collect. `earned` items are given automatically, the rest are handed out by staff.
+export const INVENTORY = [
+  { id: 'resident', name: 'Laredo Resident', kind: 'earned', rarity: 'common', hint: 'Sign in with Discord' },
+  { id: 'verified', name: 'Verified', kind: 'earned', rarity: 'uncommon', hint: 'Link your Roblox account' },
+  { id: 'applicant', name: 'Applicant', kind: 'earned', rarity: 'uncommon', hint: 'Send your first application' },
+  { id: 'streak3', name: 'Regular', kind: 'earned', rarity: 'rare', hint: 'Check in three days in a row' },
+  { id: 'streak7', name: 'Local', kind: 'earned', rarity: 'rare', hint: 'Check in seven days in a row' },
+  { id: 'streak14', name: 'Border Veteran', kind: 'earned', rarity: 'epic', hint: 'Check in fourteen days in a row' },
+  { id: 'team', name: 'Staff Team', kind: 'earned', rarity: 'epic', hint: 'Join the staff team' },
+  { id: 'winter', name: 'Snowed In', kind: 'grant', rarity: 'rare', hint: 'A winter event award' },
+  { id: 'gold_star', name: 'Gold Star', kind: 'grant', rarity: 'rare', hint: 'Handed out by staff for good work' },
+  { id: 'neon', name: 'Neon Nameplate', kind: 'grant', rarity: 'epic', hint: 'A staff award' },
+  { id: 'founder', name: 'Founder', kind: 'grant', rarity: 'legendary', hint: 'For the people who built Laredo' }
+];
+
+const INVENTORY_IDS = INVENTORY.map((i) => i.id);
+
+// how the dashboard draws a server that has no ER:LC key yet
+export const SERVER_FALLBACK = {
+  configured: false, live: false, name: 'Laredo Roleplay', players: null, maxPlayers: null,
+  players5m: null, joinCode: '', updatedAt: null, roster: []
+};
 
 export const PRICE_DEFAULTS = {
   silver_month: 230, silver_perm: 360,
@@ -46,7 +77,19 @@ export const DEFAULT_SETTINGS = {
     swat: { open: false, invite: '' },
     dot: { open: false, invite: '' }
   },
-  prices: { ...PRICE_DEFAULTS }
+  prices: { ...PRICE_DEFAULTS },
+  // Staff can turn a look off for everybody. A visitor who had it saved falls back to the default look.
+  themes: { dark: true, light: true, halloween: true, christmas: true },
+  dashboard: {
+    kicker: 'Your Laredo',
+    welcome: 'Welcome back',
+    tagline: 'Your applications, your badges, and what is happening in the city tonight.',
+    showServer: true,
+    showTeam: true,
+    showInventory: true,
+    showRoster: true
+  },
+  shopOpen: true
 };
 
 export class HttpError extends Error {
@@ -74,6 +117,17 @@ export function mergeSettings(saved) {
   for (const key of Object.keys(PRICE_DEFAULTS)) {
     if (saved.prices && Number.isFinite(saved.prices[key])) out.prices[key] = saved.prices[key];
   }
+  if (saved.themes) for (const key of THEME_KEYS) if (saved.themes[key] !== undefined) out.themes[key] = Boolean(saved.themes[key]);
+  if (saved.dashboard) {
+    const d = saved.dashboard;
+    for (const key of ['kicker', 'welcome', 'tagline']) {
+      if (typeof d[key] === 'string') out.dashboard[key] = d[key];
+    }
+    for (const key of ['showServer', 'showTeam', 'showInventory', 'showRoster']) {
+      if (d[key] !== undefined) out.dashboard[key] = Boolean(d[key]);
+    }
+  }
+  if (saved.shopOpen !== undefined) out.shopOpen = Boolean(saved.shopOpen);
   if (saved.meta) out.meta = saved.meta;
   return out;
 }
@@ -99,9 +153,38 @@ export function sanitizeSettings(input, current) {
     next.maintenance = { enabled: Boolean(m.enabled), message };
   }
   if (input.defaultTheme !== undefined) {
-    if (!THEMES.includes(input.defaultTheme)) throw new HttpError(400, 'Default look must be dark, light or halloween.');
+    if (!THEMES.includes(input.defaultTheme)) throw new HttpError(400, 'Default look must be dark, light, halloween or christmas.');
     next.defaultTheme = input.defaultTheme;
   }
+  if (input.themes !== undefined) {
+    const t = input.themes || {};
+    for (const key of THEME_KEYS) if (t[key] !== undefined) next.themes[key] = Boolean(t[key]);
+    if (!Object.values(next.themes).some(Boolean)) throw new HttpError(400, 'Leave at least one theme switched on.');
+    const offKey = next.defaultTheme === 'normal' ? 'dark' : next.defaultTheme;
+    if (!next.themes[offKey]) throw new HttpError(400, 'The default look is switched off. Pick another default or turn that one back on.');
+  }
+  if (input.dashboard !== undefined) {
+    const d = input.dashboard || {};
+    if (d.kicker !== undefined) {
+      const v = String(d.kicker || '').trim();
+      if (v.length > 30) throw new HttpError(400, 'The dashboard kicker is too long (30 characters at most).');
+      next.dashboard.kicker = v || DEFAULT_SETTINGS.dashboard.kicker;
+    }
+    if (d.welcome !== undefined) {
+      const v = String(d.welcome || '').trim();
+      if (v.length > 40) throw new HttpError(400, 'The dashboard welcome line is too long (40 characters at most).');
+      next.dashboard.welcome = v || DEFAULT_SETTINGS.dashboard.welcome;
+    }
+    if (d.tagline !== undefined) {
+      const v = String(d.tagline || '').trim();
+      if (v.length > 160) throw new HttpError(400, 'The dashboard tagline is too long (160 characters at most).');
+      next.dashboard.tagline = v;
+    }
+    for (const key of ['showServer', 'showTeam', 'showInventory', 'showRoster']) {
+      if (d[key] !== undefined) next.dashboard[key] = Boolean(d[key]);
+    }
+  }
+  if (input.shopOpen !== undefined) next.shopOpen = Boolean(input.shopOpen);
   if (input.applications !== undefined) {
     for (const id of FORM_IDS) {
       const a = input.applications && input.applications[id];
@@ -126,6 +209,45 @@ export function sanitizeSettings(input, current) {
     }
   }
   return next;
+}
+
+// ------------------------------------------------------------------ staff page
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const DISCORD_ID_RE = /^\d{1,25}$/;
+
+// Checks a team list sent by a staff admin. Empty names are dropped rather than refused.
+export function sanitizeTeam(input) {
+  const list = input && Array.isArray(input.members) ? input.members : null;
+  if (!list) throw new HttpError(400, 'Missing the member list.');
+  if (list.length > 120) throw new HttpError(400, 'That is a lot of people. Keep the list to 120 members or fewer.');
+  const members = [];
+  for (const raw of list) {
+    if (!raw || typeof raw !== 'object') continue;
+    const name = String(raw.name || '').trim().slice(0, 40);
+    if (!name) continue;
+    const title = String(raw.title || '').trim().slice(0, 48);
+    const bio = String(raw.bio || '').trim();
+    if (bio.length > 300) throw new HttpError(400, 'Keep each bio to 300 characters or fewer.');
+    const team = TEAM_IDS.includes(raw.team) ? raw.team : 'moderator';
+    const wanted = String(raw.color || '').trim();
+    if (wanted && !HEX_RE.test(wanted)) throw new HttpError(400, 'A name colour must look like #F2701D.');
+    const colour = wanted;
+    const discord = String(raw.discord || '').trim();
+    if (discord && !DISCORD_ID_RE.test(discord)) throw new HttpError(400, 'A Discord ID is numbers only (or leave it blank).');
+    const avatar = String(raw.avatar || '').trim();
+    if (avatar && !isHttps(avatar)) throw new HttpError(400, 'A custom avatar link must start with https://');
+    members.push({
+      id: /^[a-z0-9-]{6,40}$/.test(String(raw.id || '')) ? String(raw.id) : 'm-' + members.length + '-' + Math.random().toString(36).slice(2, 8),
+      name,
+      title,
+      team,
+      color: colour,
+      discord,
+      avatar: avatar.slice(0, 300),
+      bio
+    });
+  }
+  return { members };
 }
 
 const encoder = new TextEncoder();
@@ -249,6 +371,23 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
     return value;
   }
 
+  // Role names and colours, so the dashboard can show real Discord roles (not just IDs).
+  let rolesCache = { at: 0, value: null };
+  async function getGuildRoles() {
+    if (rolesCache.value && now() - rolesCache.at < 10 * 60 * 1000) return rolesCache.value;
+    if (!env.DISCORD_BOT_TOKEN) return null;
+    try {
+      const res = await fetchImpl(`https://discord.com/api/v10/guilds/${guildId}/roles`, {
+        headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN }
+      });
+      if (!res.ok) return rolesCache.value;
+      const roles = await res.json();
+      const list = (Array.isArray(roles) ? roles : []).filter((r) => r && r.id && r.name !== '@everyone');
+      rolesCache = { at: now(), value: list };
+      return list;
+    } catch { return rolesCache.value; }
+  }
+
   async function sessionFrom(req) {
     return verify(parseCookies(req.headers.get('cookie')).lr_session);
   }
@@ -281,10 +420,226 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
   function publicSettings(settings) {
     const copy = JSON.parse(JSON.stringify(settings));
     delete copy.meta;
+    copy.erlcConfigured = Boolean(env.ERLC_API_KEY);
     return copy;
   }
 
-  // ------------------------------------------------------------ routes
+  // ------------------------------------------------------------------ members
+  const dayNumber = (ms) => Math.floor(ms / 86400000);
+
+  async function getProfile(uid) {
+    const saved = await store.get('profile/' + uid, { type: 'json' });
+    return {
+      equipped: saved && INVENTORY_IDS.includes(saved.equipped) ? saved.equipped : '',
+      extra: saved && Array.isArray(saved.extra) ? saved.extra.filter((id) => INVENTORY_IDS.includes(id)) : [],
+      checkin: saved && saved.checkin && typeof saved.checkin === 'object'
+        ? { last: String(saved.checkin.last || ''), streak: Number(saved.checkin.streak) || 0, total: Number(saved.checkin.total) || 0 }
+        : { last: '', streak: 0, total: 0 }
+    };
+  }
+
+  async function saveProfile(uid, profile) {
+    await store.setJSON('profile/' + uid, profile);
+  }
+
+  function inventoryFor(profile, facts) {
+    const earned = [];
+    if (facts.loggedIn) earned.push('resident');
+    if (facts.roblox) earned.push('verified');
+    if (facts.applications > 0) earned.push('applicant');
+    if (facts.streak >= 3) earned.push('streak3');
+    if (facts.streak >= 7) earned.push('streak7');
+    if (facts.streak >= 14) earned.push('streak14');
+    if (facts.isStaff) earned.push('team');
+    const owned = new Set(earned.concat(profile.extra));
+    const equipped = owned.has(profile.equipped) ? profile.equipped : '';
+    return {
+      owned: INVENTORY.filter((i) => owned.has(i.id)),
+      equipped,
+      streak: profile.checkin.streak,
+      total: profile.checkin.total,
+      canCheckIn: profile.checkin.last !== String(dayNumber(now())),
+      lastCheckIn: profile.checkin.last || ''
+    };
+  }
+
+  // ------------------------------------------------------------------ ER:LC
+  // The ER:LC private server API. Its address moved from policeroleplay.community to erlc.gg,
+  // so both are tried. ERLC_API_BASE can point somewhere else (or at a mock) if needed.
+  let erlcCache = { at: 0, value: null };
+  const erlcBases = () => {
+    const list = [env.ERLC_API_BASE, 'https://api.erlc.gg/v1', 'https://api.policeroleplay.community/v1']
+      .filter(Boolean).map((b) => String(b).replace(/\/+$/, ''));
+    return [...new Set(list)];
+  };
+
+  const pick = (obj, keys, fallback) => {
+    if (!obj || typeof obj !== 'object') return fallback;
+    for (const key of keys) if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+    return fallback;
+  };
+
+  // The player field looks like "Name:12345" in the players endpoint.
+  const cleanPlayerName = (value) => String(value || '').split(':')[0].trim();
+
+  async function readErlcKey() {
+    if (env.ERLC_API_KEY) return env.ERLC_API_KEY;
+    const saved = await store.get('erlc-key');
+    return typeof saved === 'string' ? saved : '';
+  }
+
+  async function erlcGet(base, path, key) {
+    const res = await fetchImpl(base + path, {
+      headers: { 'Server-Key': key, 'server-key': key, Accept: 'application/json' },
+      signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined
+    });
+    if (!res.ok) throw new Error('ER:LC said ' + res.status);
+    return res.json();
+  }
+
+  async function serverStatus() {
+    if (erlcCache.value && now() - erlcCache.at < 20000) return erlcCache.value;
+    const key = await readErlcKey();
+    if (!key) {
+      erlcCache = { at: now(), value: { ...SERVER_FALLBACK } };
+      return erlcCache.value;
+    }
+    let info = null;
+    for (const base of erlcBases()) {
+      try { info = await erlcGet(base, '/server', key); break; } catch { /* try the next address */ }
+    }
+    if (!info) {
+      const value = { ...SERVER_FALLBACK, configured: true, live: false, error: 'unreachable', updatedAt: new Date(now()).toISOString() };
+      erlcCache = { at: now(), value };
+      return value;
+    }
+
+    let rows = Array.isArray(info.Players) ? info.Players : null;
+    if (!rows) {
+      for (const base of erlcBases()) {
+        try {
+          const list = await erlcGet(base, '/server/players', key);
+          rows = Array.isArray(list) ? list : (list && (list.Players || list.players)) || [];
+          break;
+        } catch { /* the roster is a bonus; the count still works */ }
+      }
+    }
+    const players = Number(pick(info, ['CurrentPlayers', 'PlayerCount', 'playerCount', 'players'], rows ? rows.length : 0)) || 0;
+    const maxPlayers = Number(pick(info, ['MaxPlayers', 'maxPlayers', 'max_players'], 0)) || null;
+    const value = {
+      configured: true, live: true,
+      name: String(pick(info, ['Name', 'name'], 'Laredo Roleplay')).slice(0, 60),
+      players, maxPlayers,
+      joinCode: String(pick(info, ['JoinKey', 'JoinCode', 'joinCode'], '')).slice(0, 12),
+      updatedAt: new Date(now()).toISOString(),
+      roster: (rows || []).slice(0, 40).map((p) => ({
+        name: (cleanPlayerName(pick(p, ['Username', 'username', 'Player', 'Name', 'name'], 'Player')) || 'Player').slice(0, 40),
+        team: String(pick(p, ['Team', 'team'], '')).slice(0, 30),
+        callsign: String(pick(p, ['Callsign', 'callsign'], '')).slice(0, 30),
+        permission: String(pick(p, ['Permission', 'permission'], '')).slice(0, 24)
+      }))
+    };
+    erlcCache = { at: now(), value };
+    return value;
+  }
+
+  async function saveErlcKey(req) {
+    checkWrite(req);
+    const w = await whoIs(req, { needAdmin: true });
+    const body = await readBody(req);
+    const key = String(body.key || '').trim();
+    if (key && !/^[A-Za-z0-9_-]{8,120}$/.test(key)) throw new HttpError(400, 'That does not look like an ER:LC server key.');
+    if (key) await store.setJSON('erlc-key', key); else await store.delete('erlc-key');
+    erlcCache = { at: 0, value: null };
+    return json({ ok: true, configured: Boolean(key || env.ERLC_API_KEY), by: w.user.name });
+  }
+
+  // ------------------------------------------------------------- staff page
+  async function teamList() {
+    const saved = await store.get('team', { type: 'json' });
+    const members = saved && Array.isArray(saved.members) ? saved.members : [];
+    return { members, updatedAt: saved && saved.updatedAt ? saved.updatedAt : null };
+  }
+
+  async function putTeam(req) {
+    checkWrite(req);
+    const w = await whoIs(req, { needAdmin: true });
+    const body = await readBody(req);
+    const clean = sanitizeTeam(body);
+    const saved = { ...clean, updatedAt: new Date(now()).toISOString(), updatedBy: w.user.name };
+    await store.setJSON('team', saved);
+    return json({ ok: true, team: saved });
+  }
+
+  // ------------------------------------------------------------------ my page
+  async function myInventory(req) {
+    const session = await requireSession(req);
+    const profile = await getProfile(session.uid);
+    const roblox = await store.get('roblox/' + session.uid, { type: 'json' });
+    let isStaff = false;
+    try { const w = await whoIs(req); isStaff = w.isStaff; } catch { /* stay offline-friendly */ }
+    const apps = await userApps(session.uid);
+    return json({ inventory: inventoryFor(profile, { loggedIn: true, roblox: Boolean(roblox), applications: apps.length, isStaff }) });
+  }
+
+  async function equipItem(req) {
+    checkWrite(req);
+    const session = await requireSession(req);
+    const { item } = await readBody(req);
+    const profile = await getProfile(session.uid);
+    const roblox = await store.get('roblox/' + session.uid, { type: 'json' });
+    let isStaff = false;
+    try { const w = await whoIs(req); isStaff = w.isStaff; } catch { /* ignore */ }
+    const apps = await userApps(session.uid);
+    const owned = inventoryFor(profile, { loggedIn: true, roblox: Boolean(roblox), applications: apps.length, isStaff }).owned.map((i) => i.id);
+    const wanted = String(item || '');
+    if (wanted && !owned.includes(wanted)) throw new HttpError(403, 'You do not own that yet.');
+    profile.equipped = wanted && wanted !== profile.equipped ? wanted : '';
+    await saveProfile(session.uid, profile);
+    return json({ ok: true, equipped: profile.equipped });
+  }
+
+  async function checkIn(req) {
+    checkWrite(req);
+    const session = await requireSession(req);
+    const profile = await getProfile(session.uid);
+    const today = dayNumber(now());
+    if (profile.checkin.last === String(today)) {
+      return json({ ok: true, already: true, streak: profile.checkin.streak, total: profile.checkin.total });
+    }
+    const yesterday = String(today - 1);
+    profile.checkin.streak = profile.checkin.last === yesterday ? profile.checkin.streak + 1 : 1;
+    profile.checkin.total += 1;
+    profile.checkin.last = String(today);
+    await saveProfile(session.uid, profile);
+    return json({ ok: true, already: false, streak: profile.checkin.streak, total: profile.checkin.total });
+  }
+
+  // ---------------------------------------------------- staff awards (admin)
+  async function adminMember(req, url) {
+    await whoIs(req, { needAdmin: true });
+    const uid = String(url.searchParams.get('id') || '');
+    if (!DISCORD_ID_RE.test(uid)) throw new HttpError(400, 'Enter the member’s Discord ID (numbers).');
+    const profile = await getProfile(uid);
+    return json({ id: uid, extra: profile.extra, equipped: profile.equipped, checkin: profile.checkin });
+  }
+
+  async function awardItems(req) {
+    checkWrite(req);
+    await whoIs(req, { needAdmin: true });
+    const body = await readBody(req);
+    const uid = String(body.userId || '').trim();
+    if (!DISCORD_ID_RE.test(uid)) throw new HttpError(400, 'Enter the member’s Discord ID (numbers).');
+    const items = Array.isArray(body.items) ? body.items.map(String) : [];
+    if (items.length > INVENTORY_IDS.length) throw new HttpError(400, 'Unknown item.');
+    for (const id of items) if (!INVENTORY_IDS.includes(id)) throw new HttpError(400, 'Unknown item: ' + id);
+    const profile = await getProfile(uid);
+    profile.extra = [...new Set(items)].filter((id) => INVENTORY.find((i) => i.id === id).kind === 'grant');
+    await saveProfile(uid, profile);
+    return json({ ok: true, items: profile.extra });
+  }
+
+  // ------------------------------------------------------------------ routes
   async function discordLogin(req, url) {
     if (!env.DISCORD_CLIENT_ID || !env.DISCORD_CLIENT_SECRET || !secret) return redirect(siteOrigin(req) + '/?auth_error=config#dashboard');
     const next = /^[a-z0-9/_-]{1,40}$/.test(url.searchParams.get('next') || '') ? url.searchParams.get('next') : 'dashboard';
@@ -339,19 +694,37 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
     const session = await sessionFrom(req);
     const base = { robloxConfigured: Boolean(env.ROBLOX_CLIENT_ID && env.ROBLOX_CLIENT_SECRET) };
     if (!session) return json({ loggedIn: false, ...base });
-    let inGuild = null, isStaff = false, isAdmin = false, warning = null;
+    let inGuild = null, isStaff = false, isAdmin = false, warning = null, member = null;
     try {
       const w = await whoIs(req);
-      inGuild = Boolean(w.member); isStaff = w.isStaff; isAdmin = w.isAdmin;
+      inGuild = Boolean(w.member); isStaff = w.isStaff; isAdmin = w.isAdmin; member = w.member;
     } catch (e) {
       if (!(e instanceof HttpError)) throw e;
       warning = e.message;
     }
     const roblox = await store.get('roblox/' + session.uid, { type: 'json' });
+    const profile = await getProfile(session.uid);
+    const apps = await userApps(session.uid);
+
+    // Real Discord roles, with their names and colours.
+    let roles = [];
+    if (member && member.roles && member.roles.length) {
+      const all = await getGuildRoles();
+      if (all) {
+        const byId = new Map(all.map((r) => [String(r.id), r]));
+        roles = member.roles.map((id) => byId.get(String(id))).filter(Boolean)
+          .sort((a, b) => (b.position || 0) - (a.position || 0))
+          .map((r) => ({ id: String(r.id), name: String(r.name).slice(0, 40), color: Number(r.color) || 0 }))
+          .slice(0, 8);
+      }
+    }
+
     return json({
       loggedIn: true, ...base,
       user: { id: session.uid, name: session.name, avatar: avatarUrl(session.uid, session.av) },
-      inGuild, isStaff, isAdmin, roblox: roblox || null, warning
+      inGuild, isStaff, isAdmin, roblox: roblox || null, warning, roles,
+      inventory: inventoryFor(profile, { loggedIn: true, roblox: Boolean(roblox), applications: apps.length, isStaff }),
+      checkin: { streak: profile.checkin.streak, total: profile.checkin.total, last: profile.checkin.last || '', canCheckIn: profile.checkin.last !== String(dayNumber(now())) }
     });
   }
 
@@ -557,6 +930,12 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
     if (is('GET', '/settings')) return json(publicSettings(await loadSettings()), 200, [['Cache-Control', 'no-store']]);
     if (is('GET', '/forms')) return json({ forms: publicForms() });
     if (is('GET', '/me')) return me(req);
+    if (is('GET', '/server')) return json(await serverStatus());
+    if (is('GET', '/team')) return json(await teamList());
+    if (is('GET', '/inventory')) return json({ catalogue: INVENTORY });
+    if (is('GET', '/me/inventory')) return myInventory(req);
+    if (is('POST', '/me/inventory/equip')) return equipItem(req);
+    if (is('POST', '/me/checkin')) return checkIn(req);
     if (is('GET', '/auth/discord/login')) return discordLogin(req, url);
     if (is('GET', '/auth/discord/callback')) return discordCallback(req, url);
     if (is('POST', '/auth/logout')) {
@@ -573,6 +952,14 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
     if (method === 'GET' && (m = path.match(/^\/staff\/applications\/([^/]+)$/))) return staffDetail(req, m[1]);
     if (method === 'POST' && (m = path.match(/^\/staff\/applications\/([^/]+)\/review$/))) return staffReview(req, m[1]);
     if (is('PUT', '/admin/settings')) return putSettings(req);
+    if (is('GET', '/admin/team')) {
+      await whoIs(req, { needAdmin: true });
+      return json(await teamList());
+    }
+    if (is('PUT', '/admin/team')) return putTeam(req);
+    if (is('GET', '/admin/member')) return adminMember(req, url);
+    if (is('PUT', '/admin/member/items')) return awardItems(req);
+    if (is('PUT', '/admin/erlc-key')) return saveErlcKey(req);
     throw new HttpError(404, 'Not found.');
   }
 

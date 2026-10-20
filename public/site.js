@@ -661,7 +661,11 @@
 
   function loadMe(force) {
     if (!meP || force) {
-      meP = api('GET', '/me').then(function (me) { state.me = me; }, function () { state.me = { loggedIn: false, offline: true }; })
+      state.apiError = '';
+      meP = api('GET', '/me').then(function (me) { state.me = me; }, function (err) {
+        state.me = { loggedIn: false, offline: true };
+        state.apiError = (err && err.message) || '';
+      })
         .then(function () { renderAccount(); applyPrefs(); checkMaintenance(); });
     }
     return meP;
@@ -1072,7 +1076,13 @@
       var err = state.authError ? alertBox(AUTH_ERRORS[state.authError] || 'Sign in failed. Please try again.') : '';
       state.authError = '';
       if (me.offline) {
-        el.innerHTML = dashHead(null) + alertBox('Accounts are not switched on for this copy of the site.');
+        el.innerHTML = '<div class="dash-head"><div><p class="dash-kicker">Your Laredo</p>' +
+          '<h1 class="dash-title">Dashboard</h1></div></div>' +
+          '<section class="dcard dash-signin dash-offline"><h2>Accounts are not switched on yet</h2>' +
+          '<p>This copy of the site is not connected to its account storage, so signing in, applications and the member area are unavailable here.</p>' +
+          (state.apiError ? '<p class="muted">' + esc(state.apiError) + '</p>' : '') +
+          '<a class="btn" href="https://discord.gg/dqpUcfUvrt" target="_blank" rel="noopener noreferrer">Ask in the Discord</a>' +
+          '</section>';
         dashPainted = false; hideBoot(); return;
       }
       if (!me.loggedIn) {
@@ -1691,7 +1701,7 @@
   }
 
   /* ------------------------------------------------------------ boot screen */
-  var bootAt = 0, bootSeq = 0;
+  var bootAt = 0, bootSeq = 0, bootTimer = 0;
   function showBoot(text) {
     var b = document.getElementById('boot');
     if (!b) return;
@@ -1701,6 +1711,9 @@
     b.classList.remove('closing');
     bootSeq += 1;
     bootAt = Date.now();
+    /* never leave a visitor on the loader if the account request stalls */
+    clearTimeout(bootTimer);
+    bootTimer = setTimeout(function () { hideBoot(); }, 8000);
   }
   function hideBoot() {
     var b = document.getElementById('boot');

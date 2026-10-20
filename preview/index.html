@@ -470,8 +470,11 @@ input[type=text],input[type=number],select,textarea{border-radius:10px;backgroun
    v3: effects, carousel, seasonal looks, dashboard shell, staff cards
    ====================================================================== */
 
-/* keep content above the moving background */
-main,.site-header,.site-footer{position:relative;z-index:2}
+/* keep content above the moving background; the header owns the look menu, so it
+   has to sit above the page as well (later rules with .root>header would otherwise win) */
+main,.site-footer{position:relative;z-index:2}
+.root>.site-header{position:relative;z-index:40}
+.root>main,.root>.site-footer{position:relative;z-index:2}
 
 /* ---------- background effects ---------- */
 .bg{background:radial-gradient(120% 90% at 50% -10%,transparent 40%,rgba(0,0,0,.16) 100%)}
@@ -544,6 +547,7 @@ main,.site-header,.site-footer{position:relative;z-index:2}
 .look-pop button:hover{background:var(--surface2)}
 .look-pop button[aria-checked="true"]{background:color-mix(in srgb,var(--accent) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent)}
 .look-pop button:disabled{opacity:.4;cursor:not-allowed}
+@media (max-width:460px){.look-pop{width:min(76vw,250px)}}
 .look-more{display:block;margin:6px 4px 2px;padding:8px 10px;border-top:1px solid var(--glass-line);font:600 13px 'Barlow',sans-serif;color:var(--muted);text-decoration:none}
 .look-more:hover{color:var(--accent)}
 

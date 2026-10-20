@@ -615,20 +615,24 @@
   function applyServer(srv) {
     state.server = srv;
     var n = $('#live-players'), of = $('#live-players-of');
-    if (n) {
-      if (srv && srv.live) {
-        n.textContent = String(srv.players);
-        of.textContent = srv.maxPlayers ? 'of ' + srv.maxPlayers + ' in the city' : 'in the city now';
-      } else if (srv && srv.error) {
-        n.textContent = '\u2014';
-        of.textContent = 'Live count unavailable right now';
-      } else if (srv && srv.configured) {
-        n.textContent = '0';
-        of.textContent = 'the server is quiet';
-      } else {
-        n.textContent = '\u2014';
-        of.textContent = 'Live count not set up yet';
+    var cell = $('#fact-players');
+    if (!n) return;
+    var set = function (value, note, off) {
+      n.textContent = value;
+      of.textContent = note;
+      if (cell) {
+        cell.classList.toggle('is-off', Boolean(off));
+        cell.classList.toggle('is-live', !off);
       }
+    };
+    if (srv && srv.live) {
+      set(String(srv.players), srv.maxPlayers ? 'of ' + srv.maxPlayers + ' in the city' : 'in the city now', false);
+    } else if (srv && srv.error) {
+      set('Offline', 'count unavailable', true);
+    } else if (srv && srv.configured) {
+      set('0', 'the server is quiet', false);
+    } else {
+      set('\u2014', 'not switched on yet', true);
     }
   }
 
@@ -690,35 +694,64 @@
     }).join('') + (me.isStaff ? '<a href="#panel">Staff panel</a>' : '') + '</nav>';
   }
 
+  /* Discord roles, as small tags. These used to be "pill-2 role", which collided with the
+     big .role banners on the rules page: every tag inherited min-height:150px. Keep the
+     class name to itself. */
   function rolePills(me) {
     var out = '';
     (me.roles || []).forEach(function (r) {
       var colour = r.color ? '#' + ('000000' + r.color.toString(16)).slice(-6) : '';
-      out += '<span class="pill-2 role"' + (colour ? ' style="--rc:' + colour + '"' : '') + '>' + esc(r.name) + '</span>';
+      out += '<span class="role-tag"' + (colour ? ' style="--rc:' + colour + '"' : '') + '>' +
+        '<i aria-hidden="true"></i>' + esc(r.name) + '</span>';
     });
     return out;
   }
 
-  function heroCard(me) {
+  function idBar(me) {
     var inv = me.inventory || {};
     var worn = (inv.owned || []).filter(function (i) { return i.id === inv.equipped; })[0];
-    var html = '<section class="dcard hero-card">' +
-      '<div class="avatar-ring"><img alt="" src="' + esc(me.user.avatar) + '"></div>' +
-      '<div class="hero-card-info"><p class="dcard-k">Signed in as</p>' +
-      '<p class="hc-name">' + esc(me.user.name) + '</p>' +
-      '<div class="hc-meta">';
-    if (me.isAdmin) html += '<span class="pill-2 ok">Staff admin</span>';
-    else if (me.isStaff) html += '<span class="pill-2 warn">Staff team</span>';
-    if (me.roblox) html += '<span class="pill-2 ok">Roblox linked</span>';
-    html += me.inGuild ? '<span class="pill-2">In the Discord</span>' : '<span class="pill-2 warn">Not in the Discord</span>';
-    if (worn) html += '<span class="pill-2">Wearing ' + esc(worn.name) + '</span>';
-    html += rolePills(me) + '</div>';
-    html += me.inGuild
-      ? '<p class="muted" style="margin-top:8px">Member of the Laredo Roleplay Discord</p>'
-      : '<p class="muted" style="margin-top:8px">You are not in our Discord yet. <a href="' + esc(CONFIG.discordInvite || '#') + '" target="_blank" rel="noopener noreferrer">Join here</a> so staff can check your roles.</p>';
-    html += '</div>';
-    html += '<button class="btn btn-small" id="signout" type="button">Sign out</button>';
-    return html + '</section>';
+    var tags = '';
+    if (me.isAdmin) tags += '<span class="pill-2 ok">Staff admin</span>';
+    else if (me.isStaff) tags += '<span class="pill-2 warn">Staff team</span>';
+    if (me.roblox) tags += '<span class="pill-2 ok">Roblox linked</span>';
+    tags += me.inGuild ? '<span class="pill-2">In the Discord</span>' : '<span class="pill-2 warn">Not in the Discord</span>';
+    var roles = rolePills(me);
+    var note = me.inGuild
+      ? 'Member of the Laredo Roleplay Discord'
+      : 'Not in our Discord yet. <a href="' + esc(CONFIG.discordInvite || '#') + '" target="_blank" rel="noopener noreferrer">Join here</a> so staff can check your roles.';
+    return '<section class="idbar">' +
+      '<span class="idbar-av"><img alt="" src="' + esc(me.user.avatar) + '"></span>' +
+      '<div class="idbar-main">' +
+        '<p class="idbar-k">Signed in as</p>' +
+        '<h2 class="idbar-name">' + esc(me.user.name) + '</h2>' +
+        '<p class="idbar-sub">' + note + '</p>' +
+        '<div class="idbar-tags">' + tags + '</div>' +
+        (roles ? '<div class="idbar-roles"><span class="idbar-roles-k">Discord roles</span>' + roles + '</div>' : '') +
+      '</div>' +
+      '<div class="idbar-side">' +
+        (worn ? '<span class="idbar-worn"><i>' + esc(initials(worn.name)) + '</i><span>Wearing<strong>' + esc(worn.name) + '</strong></span></span>' : '') +
+        '<button class="btn-quiet" id="signout" type="button">Sign out</button>' +
+      '</div>' +
+      '</section>';
+  }
+
+  function statStrip(me, apps) {
+    var srv = state.server || {};
+    var inv = me.inventory || {};
+    var owned = (inv.owned || []).length;
+    var total = (state.catalogue || []).length || owned;
+    var streak = Number((me.checkin || {}).streak) || 0;
+    var live = Boolean(srv && srv.live);
+    var tiles = [
+      { k: 'In the city', v: live ? fmtNum(srv.players) : '&mdash;', s: live && srv.maxPlayers ? 'of ' + fmtNum(srv.maxPlayers) + ' seats' : 'live count', tone: live ? 'on' : '' },
+      { k: 'Badges', v: owned + '<em>/' + total + '</em>', s: 'collected', tone: '' },
+      { k: 'Streak', v: streak, s: streak === 1 ? 'day in a row' : 'days in a row', tone: '' },
+      { k: 'Applications', v: apps.length, s: apps.length === 1 ? 'sent' : 'sent', tone: '' }
+    ];
+    return '<div class="dstats">' + tiles.map(function (t) {
+      return '<div class="dstat' + (t.tone ? ' is-' + t.tone : '') + '"><span class="dstat-k">' + t.k + '</span>' +
+        '<span class="dstat-v">' + t.v + '</span><span class="dstat-s">' + t.s + '</span></div>';
+    }).join('') + '</div>';
   }
 
   function checkinCard(me) {
@@ -856,12 +889,13 @@
     var d = (state.settings && state.settings.dashboard) || {};
     var showServer = d.showServer !== false, showTeam = d.showTeam !== false;
     var showInv = d.showInventory !== false;
+    var top = idBar(me) + statStrip(me, apps) + dashNav(me);
     if (state.dashTab === 'inventory') {
-      return '<div class="dash-grid"><div class="dash-col">' + inventoryCard(me, true) + checkinCard(me) + '</div>' +
+      return top + '<div class="dash-grid"><div class="dash-col">' + inventoryCard(me, true) + checkinCard(me) + '</div>' +
         '<div class="dash-col">' + robloxCard(me) + (showServer ? serverCard(false) : '') + '</div></div>';
     }
     if (state.dashTab === 'applications') {
-      return '<div class="dash-grid"><div class="dash-col">' + applicationsCard(apps) + '</div>' +
+      return top + '<div class="dash-grid"><div class="dash-col">' + applicationsCard(apps) + '</div>' +
         '<div class="dash-col">' + '<section class="dcard"><div class="dcard-h"><h2>Before you apply</h2></div>' +
         '<p class="muted">Read the rules, be honest, and answer in your own words. Staff read every application, and the decision lands on this page.</p>' +
         '<div class="quick-grid"><a class="quick-link" href="#rules"><b>The rules</b><span>Two minutes, worth it</span></a>' +
@@ -869,13 +903,13 @@
         robloxCard(me) + '</div></div>';
     }
     if (state.dashTab === 'server') {
-      return '<div class="dash-grid"><div class="dash-col">' + serverCard(true) + '</div><div class="dash-col">' +
+      return top + '<div class="dash-grid"><div class="dash-col">' + serverCard(true) + '</div><div class="dash-col">' +
         '<section class="dcard"><div class="dcard-h"><h2>How to join</h2></div>' +
         '<p class="muted">Open Emergency Response: Liberty County on Roblox, then use the join code above when the server is up. If the count shows 0, nobody is on shift right now.</p>' +
         '<p><a class="btn btn-small" href="https://www.roblox.com/games/2534724415/Emergency-Response-Liberty-County" target="_blank" rel="noopener noreferrer">Open the game</a></p></section>' +
         (showServer ? checkinCard(me) : '') + '</div></div>';
     }
-    return '<div class="dash-grid"><div class="dash-col">' + heroCard(me) +
+    return top + '<div class="dash-grid"><div class="dash-col">' +
       (showInv ? inventoryCard(me, false) : '') + applicationsCard(apps) + '</div>' +
       '<div class="dash-col">' + (showServer ? serverCard(false) : '') + checkinCard(me) + robloxCard(me) + quickLinks(me) +
       (showTeam ? teamCard() : '') + '</div></div>';
@@ -942,7 +976,7 @@
         dashPainted = false; hideBoot(); return;
       }
       api('GET', '/applications/mine').then(function (d) { return d.applications; }, function () { return []; }).then(function (apps) {
-        var html = dashHead(me) + (err || '') + (me.warning ? alertBox(me.warning) : '') + dashNav(me) + dashboardBody(me, apps);
+        var html = dashHead(me) + (err || '') + (me.warning ? alertBox(me.warning) : '') + dashboardBody(me, apps);
         el.innerHTML = html;
         dashPainted = true;
         wireDashboard(el, me);

@@ -122,6 +122,8 @@ Changes can take up to a minute to reach everyone, because Cloudflare KV spreads
 
 - **Application questions:** edit `src/forms.mjs`.
 - **Staff page:** the staff panel writes it; nothing to edit by hand. The teams and their colours live in `TEAM_INFO` in `public/site.js`.
+- **Collectable looks:** Neon Night, Desert Dusk, Emerald and Vapor are opened by pass badges (`pass_neon`, `pass_dusk`, `pass_emerald`, `pass_vapor`). Hand a pass out from the staff panel's Members tab; the member wears it in their inventory and the look appears in the Look menu.
+- **Auras:** `aurora` animates the avatar ring, `ember` adds drifting embers on top of any look.
 - **Carousel slides:** the three home slides are drawn in the page (wordmark slide, plan grid, rings) so there are no photos to replace. The words live in `public/index.html` under `hero-slide`, and the artwork and colours are in `styles.css` under `slide-art`.
 - **Badges:** the list is `INVENTORY` in `src/core.mjs`.
 - **Server code:** add your private server code to `public/config.js` and it shows on the home page.

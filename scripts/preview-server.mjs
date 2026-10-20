@@ -135,9 +135,13 @@ const server = http.createServer(async (req, res) => {
         req.on('data', (c) => chunks.push(c));
         req.on('end', () => resolve(Buffer.concat(chunks)));
       });
+      // The browser's Origin is the preview address, which is not this server's own origin,
+      // so it is dropped here. Production keeps the real check in src/core.mjs.
+      const sendHeaders = { ...req.headers };
+      delete sendHeaders.origin;
       const request = new Request(url.toString(), {
         method: req.method,
-        headers: req.headers,
+        headers: sendHeaders,
         body
       });
       const response = await api(request);

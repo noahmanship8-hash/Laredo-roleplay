@@ -592,7 +592,12 @@
       box.innerHTML = '<a class="btn btn-small" href="' + signInUrl('dashboard') + '">Sign in with Discord</a>';
       return;
     }
-    box.innerHTML = '<a class="account" href="#dashboard"><img alt="" src="' + esc(me.user.avatar) + '"><span>' + esc(me.user.name) + '</span></a>';
+    var worn = wornBadge(me);
+    box.innerHTML = '<a class="account' + (worn ? ' has-badge' : '') + '" href="#dashboard" title="' +
+      esc(worn ? 'Wearing ' + worn.name : me.user.name) + '"><img alt="" src="' + esc(me.user.avatar) +
+      '"><span>' + esc(me.user.name) + '</span>' +
+      (worn ? '<i class="account-badge rarity-' + esc(worn.rarity || 'common') + '">' + esc(initials(worn.name)) + '</i>' : '') +
+      '</a>';
   }
 
   var meP = null, settingsP = null, formsP = null;
@@ -697,6 +702,22 @@
   /* Discord roles, as small tags. These used to be "pill-2 role", which collided with the
      big .role banners on the rules page: every tag inherited min-height:150px. Keep the
      class name to itself. */
+  var RARITY = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
+
+  function wornBadge(me) {
+    var inv = (me && me.inventory) || {};
+    return (inv.owned || []).filter(function (i) { return i.id === inv.equipped; })[0] || null;
+  }
+
+  /* The badge you wear is not just a label: it sets the accent of your member area,
+     rings your avatar, sits next to your name here and in the site header. */
+  function badgeTag(badge, extra) {
+    if (!badge) return '';
+    return '<span class="badge-tag rarity-' + esc(badge.rarity || 'common') + (extra ? ' ' + extra : '') + '"' +
+      ' title="' + esc((badge.name || 'Badge') + ' - ' + (RARITY[badge.rarity] || 'Badge')) + '">' +
+      '<i aria-hidden="true">' + esc(initials(badge.name)) + '</i>' + esc(badge.name) + '</span>';
+  }
+
   function rolePills(me) {
     var out = '';
     (me.roles || []).forEach(function (r) {
@@ -708,8 +729,7 @@
   }
 
   function idBar(me) {
-    var inv = me.inventory || {};
-    var worn = (inv.owned || []).filter(function (i) { return i.id === inv.equipped; })[0];
+    var worn = wornBadge(me);
     var tags = '';
     if (me.isAdmin) tags += '<span class="pill-2 ok">Staff admin</span>';
     else if (me.isStaff) tags += '<span class="pill-2 warn">Staff team</span>';
@@ -719,17 +739,21 @@
     var note = me.inGuild
       ? 'Member of the Laredo Roleplay Discord'
       : 'Not in our Discord yet. <a href="' + esc(CONFIG.discordInvite || '#') + '" target="_blank" rel="noopener noreferrer">Join here</a> so staff can check your roles.';
-    return '<section class="idbar">' +
-      '<span class="idbar-av"><img alt="" src="' + esc(me.user.avatar) + '"></span>' +
+    return '<section class="idbar"' + (worn ? ' data-badge="' + esc(worn.id) + '"' : '') + '>' +
+      '<span class="idbar-av rarity-' + esc((worn && worn.rarity) || 'common') + (worn ? ' is-worn' : '') + '">' +
+        '<img alt="" src="' + esc(me.user.avatar) + '"></span>' +
       '<div class="idbar-main">' +
         '<p class="idbar-k">Signed in as</p>' +
-        '<h2 class="idbar-name">' + esc(me.user.name) + '</h2>' +
+        '<h2 class="idbar-name">' + esc(me.user.name) + (worn ? badgeTag(worn, 'name-tag') : '') + '</h2>' +
         '<p class="idbar-sub">' + note + '</p>' +
         '<div class="idbar-tags">' + tags + '</div>' +
         (roles ? '<div class="idbar-roles"><span class="idbar-roles-k">Discord roles</span>' + roles + '</div>' : '') +
       '</div>' +
       '<div class="idbar-side">' +
-        (worn ? '<span class="idbar-worn"><i>' + esc(initials(worn.name)) + '</i><span>Wearing<strong>' + esc(worn.name) + '</strong></span></span>' : '') +
+        (worn
+          ? '<span class="idbar-worn rarity-' + esc(worn.rarity || 'common') + '"><i>' + esc(initials(worn.name)) + '</i>' +
+            '<span>Wearing<strong>' + esc(worn.name) + '</strong></span></span>'
+          : '<span class="idbar-worn is-empty"><span>No badge on<strong>Pick one below</strong></span></span>') +
         '<button class="btn-quiet" id="signout" type="button">Sign out</button>' +
       '</div>' +
       '</section>';
@@ -836,8 +860,9 @@
     var on = inv.equipped === item.id;
     var rarity = item.rarity || 'common';
     return '<div class="inv-item rarity-' + esc(rarity) + (owned ? ' owned' : ' locked') + (on ? ' is-on' : '') + '"' +
-      (owned && canEquip ? ' data-equip="' + esc(item.id) + '" tabindex="0" role="button"' : '') +
-      ' title="' + esc(item.hint || '') + '"><span class="inv-badge">' + esc(initials(item.name)) + '</span>' +
+      (owned && canEquip ? ' data-equip="' + esc(item.id) + '" tabindex="0" role="button" aria-pressed="' + (on ? 'true' : 'false') + '"' : '') +
+      ' title="' + esc((item.name || '') + (owned ? ' - ' + (on ? 'worn, press to put it away' : 'press to wear it') : ' - ' + (item.hint || 'locked'))) + '">' +
+      '<span class="inv-badge">' + esc(initials(item.name)) + '</span>' +
       '<span class="inv-name">' + esc(item.name) + '</span></div>';
   }
 
@@ -915,6 +940,19 @@
       (showTeam ? teamCard() : '') + '</div></div>';
   }
 
+  function dashToast(text) {
+    var host = $('#dash-root');
+    if (!host) return;
+    var old = $('.dash-toast');
+    if (old) old.remove();
+    var note = document.createElement('p');
+    note.className = 'dash-toast';
+    note.setAttribute('role', 'status');
+    note.textContent = text;
+    host.appendChild(note);
+    setTimeout(function () { if (note.parentNode) note.remove(); }, 2600);
+  }
+
   function wireDashboard(el, me) {
     var signout = $('#signout');
     if (signout) signout.addEventListener('click', function () {
@@ -932,7 +970,10 @@
     var checkin = $('#checkin-btn');
     if (checkin) checkin.addEventListener('click', function () {
       checkin.disabled = true;
-      api('POST', '/me/checkin', {}).then(function () { return loadMe(true); }).then(renderDashboard, function (err) {
+      api('POST', '/me/checkin', {}).then(function () { return loadMe(true); }).then(function () {
+        renderDashboard();
+        setTimeout(function () { dashToast('Checked in for today.'); }, 80);
+      }, function (err) {
         checkin.disabled = false;
         var box = $('#dash-root');
         if (box) box.insertAdjacentHTML('afterbegin', alertBox(err.message));
@@ -948,8 +989,17 @@
     $$('[data-equip]', el).forEach(function (b) {
       var go = function () {
         var id = b.getAttribute('data-equip');
+        var label = (b.querySelector('.inv-name') || {}).textContent || 'Badge';
         var next = (state.me && state.me.inventory && state.me.inventory.equipped === id) ? '' : id;
-        api('POST', '/me/inventory/equip', { item: next }).then(function () { return loadMe(true); }).then(renderDashboard);
+        b.setAttribute('aria-pressed', next ? 'true' : 'false');
+        api('POST', '/me/inventory/equip', { item: next }).then(function () { return loadMe(true); }).then(function () {
+          renderDashboard();
+          // the dashboard repaints itself from a promise, so wait for that before announcing
+          setTimeout(function () { dashToast(next ? 'Wearing ' + label + '.' : 'Badge put away.'); }, 80);
+        }, function (err) {
+          b.setAttribute('aria-pressed', next ? 'false' : 'true');
+          dashToast(err.message);
+        });
       };
       b.addEventListener('click', go);
       b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });

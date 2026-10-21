@@ -340,8 +340,39 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
 
   const clearCookie = (name, path = '/') => cookie(name, '', { maxAge: 0, path });
 
+  // The origin that sign-in bounces back to. Discord only accepts a redirect_uri that is
+  // registered on the app word for word, so when SITE_URL is set it wins over whatever
+  // hostname the visitor happens to be on (a preview deployment, a custom domain, www).
   function siteOrigin(req) {
-    return env.SITE_URL ? new URL(env.SITE_URL).origin : new URL(req.url).origin;
+    if (env.SITE_URL) {
+      try {
+        const site = new URL(String(env.SITE_URL).trim());
+        if (site.protocol === 'https:' || site.protocol === 'http:') return site.origin;
+      } catch { /* a typo in SITE_URL falls back to the request origin */ }
+    }
+    return new URL(req.url).origin;
+  }
+
+  // Everything a person needs to compare our settings with the Discord developer portal.
+  // Nothing secret is in here: the client id already travels in the browser's URL.
+  function authDiagnostic(req) {
+    const origin = siteOrigin(req);
+    const reqOrigin = new URL(req.url).origin;
+    return json({
+      siteUrl: env.SITE_URL || '',
+      requestOrigin: reqOrigin,
+      origin,
+      // if these two differ, the visitor is on a hostname Discord does not know about
+      matchesRequest: origin === reqOrigin,
+      clientId: env.DISCORD_CLIENT_ID || '',
+      discordRedirectUri: origin + '/api/auth/discord/callback',
+      robloxRedirectUri: origin + '/api/auth/roblox/callback',
+      env: {
+        SESSION_SECRET: Boolean(env.SESSION_SECRET && String(env.SESSION_SECRET).length >= 32),
+        DISCORD_CLIENT_ID: Boolean(env.DISCORD_CLIENT_ID),
+        DISCORD_CLIENT_SECRET: Boolean(env.DISCORD_CLIENT_SECRET)
+      }
+    }, 200, [['Cache-Control', 'no-store']]);
   }
 
   function checkWrite(req) {
@@ -649,6 +680,11 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
 
   // ------------------------------------------------------------------ routes
   async function discordLogin(req, url) {
+    // Starting from a hostname Discord does not know about (a preview deployment, www, a
+    // custom domain) would fail the redirect check and would leave the state cookie on the
+    // wrong host. Send the whole flow to the one canonical origin instead.
+    const canonical = siteOrigin(req);
+    if (env.SITE_URL && canonical !== new URL(req.url).origin) return redirect(canonical + url.pathname + url.search);
     if (!env.DISCORD_CLIENT_ID || !env.DISCORD_CLIENT_SECRET || !secret) return redirect(siteOrigin(req) + '/?auth_error=config#dashboard');
     const next = /^[a-z0-9/_-]{1,40}$/.test(url.searchParams.get('next') || '') ? url.searchParams.get('next') : 'dashboard';
     const state = randomHex(16);
@@ -657,8 +693,7 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
       response_type: 'code',
       redirect_uri: siteOrigin(req) + '/api/auth/discord/callback',
       scope: 'identify',
-      state,
-      prompt: 'none'
+      state
     });
     return redirect('https://discord.com/oauth2/authorize?' + params, [
       cookie('lr_oauth_d', await sign({ s: state, next, exp: nowSec() + 600 }), { maxAge: 600, path: '/api/auth' })
@@ -944,6 +979,7 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
     if (is('GET', '/me/inventory')) return myInventory(req);
     if (is('POST', '/me/inventory/equip')) return equipItem(req);
     if (is('POST', '/me/checkin')) return checkIn(req);
+    if (is('GET', '/auth/discord/diagnostic')) return authDiagnostic(req);
     if (is('GET', '/auth/discord/login')) return discordLogin(req, url);
     if (is('GET', '/auth/discord/callback')) return discordCallback(req, url);
     if (is('POST', '/auth/logout')) {

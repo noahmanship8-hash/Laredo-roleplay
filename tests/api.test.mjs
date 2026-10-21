@@ -344,3 +344,32 @@ test('the ER:LC key is admin only and turns the live count on', async () => {
   assert.deepEqual(live.roster.map((p) => p.name), ['Avery_TX']); // "Name:Id" is tidied up
   assert.ok(calls.some((u) => u.startsWith('https://api.erlc.gg/v1/server')));
 });
+
+test('sign in uses SITE_URL when it is set, so preview hostnames still sign in', async () => {
+  const { handle } = setup({ SITE_URL: 'https://laredo-roleplay.pages.dev/' });
+  // a preview hostname first hands the visitor over to the canonical origin, so the state
+  // cookie and the redirect_uri both belong to the address Discord has registered
+  const hop = await handle(new Request('https://a1b2c3d4.laredo-roleplay.pages.dev/api/auth/discord/login', { redirect: 'manual' }));
+  assert.equal(hop.status, 302);
+  assert.equal(hop.headers.get('location'), 'https://laredo-roleplay.pages.dev/api/auth/discord/login');
+  const start = await handle(new Request('https://laredo-roleplay.pages.dev/api/auth/discord/login', { redirect: 'manual' }));
+  const loc = new URL(start.headers.get('location'));
+  assert.equal(loc.origin, 'https://discord.com');
+  assert.equal(loc.searchParams.get('redirect_uri'), 'https://laredo-roleplay.pages.dev/api/auth/discord/callback');
+
+  const diag = await (await handle(new Request('https://a1b2c3d4.laredo-roleplay.pages.dev/api/auth/discord/diagnostic'))).json();
+  assert.equal(diag.origin, 'https://laredo-roleplay.pages.dev');
+  assert.equal(diag.requestOrigin, 'https://a1b2c3d4.laredo-roleplay.pages.dev');
+  assert.equal(diag.matchesRequest, false);
+  assert.equal(diag.discordRedirectUri, 'https://laredo-roleplay.pages.dev/api/auth/discord/callback');
+  assert.equal(diag.clientId, 'cid');
+  assert.equal(diag.env.DISCORD_CLIENT_SECRET, true);
+});
+
+test('sign in falls back to the request host and never adds prompt=none', async () => {
+  const { handle } = setup({ SITE_URL: 'not a url' });
+  const start = await handle(new Request(SITE + '/api/auth/discord/login', { redirect: 'manual' }));
+  const loc = new URL(start.headers.get('location'));
+  assert.equal(loc.searchParams.get('redirect_uri'), SITE + '/api/auth/discord/callback');
+  assert.equal(loc.searchParams.get('prompt'), null);
+});

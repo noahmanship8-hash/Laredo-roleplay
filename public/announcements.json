@@ -1,8 +1,62 @@
 {
-  "updated": "2026-10-17T18:03:02.500Z",
+  "updated": "2026-10-21T15:52:13.360Z",
   "guildId": "1554210300377563226",
   "channelId": "1554214242432065598",
   "announcements": [
+    {
+      "id": "1562442875734724719",
+      "timestamp": "2026-10-21T12:30:10.360000+00:00",
+      "edited": false,
+      "author": {
+        "name": "Laredo Utilities",
+        "avatar": "https://cdn.discordapp.com/avatars/1557826800661307513/1bfa2b783f0a5c560691b762fb756c26.png?size=64"
+      },
+      "content": "",
+      "embeds": [],
+      "components": [
+        {
+          "type": 17,
+          "components": [
+            {
+              "type": 10,
+              "content": "## 📢 LAREDO ROLEPLAY WEBSITE UPDATE 🇺🇸"
+            },
+            {
+              "type": 14,
+              "divider": true
+            },
+            {
+              "type": 10,
+              "content": "HAVE YOU CHECKED OUT OUR WEBSITE YET?\n\nThe Laredo Roleplay website is here, and there are some cool features to check out! We're working on making it a useful place for our community, with more ways to personalise your experience and keep everything in one place.\n\n🌐 WEBSITE: https://laredo-roleplay.pages.dev/\n\n🎒・INVENTORY SYSTEM\n\nOur website includes an inventory feature, giving users a dedicated place to view and manage their inventory.\n\nIt's another part of the website we're building to make the experience more interactive and give members more to explore beyond the usual server information.\n\n🎨・UNLOCKABLE THEMES\n\nWant to customise how the website looks? 👀\n\nThe website also features unlockable themes, letting you explore different looks and personalise your experience as you unlock them.\n\nIt's a nice way to give the website your own style instead of having everyone use the exact same appearance.\n\n🔥・WHAT ELSE CAN YOU CHECK OUT?\n\n🚔 Department information — Learn about our departments and the opportunities available.\n\n📋 Website information — Find useful details about Laredo Roleplay.\n\n🎨 Customisation — Explore the themes and personalisation features available.\n\n🎒 Inventory — Check out the website's inventory feature.\n\n🛠️・MORE UPDATES TO COME\n\nWe're continuing to develop Laredo Roleplay and improve the website. Make sure to check it out and keep an eye on announcements for future updates!\n\nIf you've got suggestions or ideas for features you'd like to see, let us know in the Discord.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🌐 WEBSITE: https://laredo-roleplay.pages.dev/"
+            },
+            {
+              "type": 14,
+              "divider": true
+            },
+            {
+              "type": 10,
+              "content": "-# Announced by @noah • Wed, 21 Oct 2026 12:30:09 GMT"
+            },
+            {
+              "type": 14,
+              "divider": true
+            },
+            {
+              "type": 12,
+              "items": [
+                {
+                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1562442874795069440/divider_bar.png?ex=6ada01d2&is=6ad8b052&hm=a8526b96bf023b05e628dafca1b66e8068424c6f8b9e1b0ec0e17fd7562e153b&",
+                  "description": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "componentsV2": true,
+      "attachments": 0,
+      "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1562442875734724719"
+    },
     {
       "id": "1558901767926714510",
       "timestamp": "2026-10-11T17:59:04.468000+00:00",
@@ -45,7 +99,7 @@
               "type": 12,
               "items": [
                 {
-                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558901767499030658/divider_bar.png?ex=6ad508e8&is=6ad3b768&hm=3a338ba519814959417431b0bd22f36e18d2caa7d9c56f36f0ff940cd4538b00&",
+                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558901767499030658/divider_bar.png?ex=6ad9a628&is=6ad854a8&hm=910868517cc58c7826e18c864000ec7f3033415b3c7b83bd6d108f068a286dea&",
                   "description": ""
                 }
               ]
@@ -56,21 +110,6 @@
       "componentsV2": true,
       "attachments": 0,
       "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1558901767926714510"
-    },
-    {
-      "id": "1558901766299455601",
-      "timestamp": "2026-10-11T17:59:04.080000+00:00",
-      "edited": false,
-      "author": {
-        "name": "Laredo Utilities",
-        "avatar": "https://cdn.discordapp.com/avatars/1557826800661307513/1bfa2b783f0a5c560691b762fb756c26.png?size=64"
-      },
-      "content": "@Announcment Ping",
-      "embeds": [],
-      "components": [],
-      "componentsV2": false,
-      "attachments": 0,
-      "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1558901766299455601"
     },
     {
       "id": "1558609207345807433",
@@ -114,7 +153,7 @@
               "type": 12,
               "items": [
                 {
-                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558609206985228308/divider_bar.png?ex=6ad4a130&is=6ad34fb0&hm=713d5ab4184306541fb080890711eb0aa6359ef08ea20bae4b77b35d9e351e69&",
+                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558609206985228308/divider_bar.png?ex=6ad9e730&is=6ad895b0&hm=bc510cc2bfeb066fb59989d82bf8ad8c4dd825e0be4c7059d64b96e57cf58a23&",
                   "description": ""
                 }
               ]
@@ -168,7 +207,7 @@
               "type": 12,
               "items": [
                 {
-                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558485517509595136/divider_bar.png?ex=6ad4d6be&is=6ad3853e&hm=92c5a4bf1e6f334c7fba3c8a9d0d45051d1bddcd9517278e1459f67120cd6ee7&",
+                  "url": "https://cdn.discordapp.com/attachments/1554214242432065598/1558485517509595136/divider_bar.png?ex=6ada1cbe&is=6ad8cb3e&hm=c31e43cfda9cd3a89da94a874141f572dd935a6fca45705d8630b087ad7b600d&",
                   "description": ""
                 }
               ]
@@ -179,21 +218,6 @@
       "componentsV2": true,
       "attachments": 0,
       "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1558485518033879140"
-    },
-    {
-      "id": "1558485516486311978",
-      "timestamp": "2026-10-10T14:25:02.391000+00:00",
-      "edited": false,
-      "author": {
-        "name": "Laredo Utilities",
-        "avatar": "https://cdn.discordapp.com/avatars/1557826800661307513/1bfa2b783f0a5c560691b762fb756c26.png?size=64"
-      },
-      "content": "@Announcment Ping",
-      "embeds": [],
-      "components": [],
-      "componentsV2": false,
-      "attachments": 0,
-      "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1558485516486311978"
     },
     {
       "id": "1554223673681121411",

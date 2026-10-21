@@ -147,7 +147,7 @@ Changes can take up to a minute to reach everyone, because Cloudflare KV spreads
 | `/api/health` says "Storage is not connected" | The KV binding is missing or not named exactly `LAREDO`. Add it and redeploy. |
 | "Sign in is not set up on this site yet" | `SESSION_SECRET`, `DISCORD_CLIENT_ID` or `DISCORD_CLIENT_SECRET` is missing. Redeploy after adding them. |
 | Discord says "Invalid redirect" | The redirect in Part 4 does not exactly match your site address. |
-| "Could not check your Discord roles" | `DISCORD_BOT_TOKEN` is missing or wrong, or the bot is not in the server. If it persists, turn on **Server Members Intent** on the bot's page. |
+| "Your Discord roles could not be read" / "The bot token is not set up" | `DISCORD_BOT_TOKEN` is missing from this deployment. Sign in still works, but role badges, staff access and the staff panel stay off. Add the token as a Secret, redeploy, then check `SITE ADDRESS/api/auth/discord/diagnostic` — it prints `botToken` and `guildId`. The bot must also be a member of that server; if it is and roles still fail, turn on **Server Members Intent** on the bot's page. |
 | Staff cannot open the panel | They need the Staff Team role in your server. Sign out and back in. |
 | Roblox sign in fails | Both Roblox variables are set, the redirect matches, and Roblox has approved the app. |
 | Announcements stopped updating | Open the GitHub Actions tab. GitHub pauses scheduled jobs after about 60 days with no activity. |

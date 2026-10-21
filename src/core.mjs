@@ -367,10 +367,16 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
       clientId: env.DISCORD_CLIENT_ID || '',
       discordRedirectUri: origin + '/api/auth/discord/callback',
       robloxRedirectUri: origin + '/api/auth/roblox/callback',
+      guildId,
+      // what the dashboard needs before it can read roles: a bot token, and the bot
+      // itself must be in the server above
+      botToken: Boolean(env.DISCORD_BOT_TOKEN),
       env: {
         SESSION_SECRET: Boolean(env.SESSION_SECRET && String(env.SESSION_SECRET).length >= 32),
         DISCORD_CLIENT_ID: Boolean(env.DISCORD_CLIENT_ID),
-        DISCORD_CLIENT_SECRET: Boolean(env.DISCORD_CLIENT_SECRET)
+        DISCORD_CLIENT_SECRET: Boolean(env.DISCORD_CLIENT_SECRET),
+        DISCORD_BOT_TOKEN: Boolean(env.DISCORD_BOT_TOKEN),
+        DISCORD_GUILD_ID: Boolean(env.DISCORD_GUILD_ID)
       }
     }, 200, [['Cache-Control', 'no-store']]);
   }
@@ -395,7 +401,11 @@ export function createApi({ store, fetch: fetchImpl = globalThis.fetch, env = {}
   async function getMember(uid) {
     const hit = memberCache.get(uid);
     if (hit && now() - hit.at < 45000) return hit.value;
-    if (!env.DISCORD_BOT_TOKEN) throw new HttpError(500, 'The bot token is not set up on the server.');
+    // Roles live behind the bot. Without its token the site can still sign people in,
+    // it just cannot say who is staff, so say that in plain words instead of failing.
+    if (!env.DISCORD_BOT_TOKEN) {
+      throw new HttpError(503, 'Your Discord roles could not be read because the site’s Discord bot token has not been set up yet. You are signed in, but staff access and role badges stay off until it is.');
+    }
     const res = await fetchImpl(`https://discord.com/api/v10/guilds/${guildId}/members/${uid}`, {
       headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN }
     });

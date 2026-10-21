@@ -373,3 +373,23 @@ test('sign in falls back to the request host and never adds prompt=none', async 
   assert.equal(loc.searchParams.get('redirect_uri'), SITE + '/api/auth/discord/callback');
   assert.equal(loc.searchParams.get('prompt'), null);
 });
+
+test('without a bot token people can still sign in, and the diagnostic says what is missing', async () => {
+  const { handle } = setup({ DISCORD_BOT_TOKEN: undefined });
+  const b = new Browser(handle);
+  await b.login('code-staff');
+  const me = await b.me();
+  assert.equal(me.loggedIn, true);
+  assert.equal(me.inGuild, null);
+  assert.equal(me.isStaff, false);
+  assert.equal(me.roles.length, 0);
+  assert.match(me.warning, /bot token/i);
+  // the warning must read like a sentence for a person, not like a server log
+  assert.match(me.warning, /signed in/i);
+
+  const diag = await (await handle(new Request(SITE + '/api/auth/discord/diagnostic'))).json();
+  assert.equal(diag.botToken, false);
+  assert.equal(diag.env.DISCORD_BOT_TOKEN, false);
+  assert.equal(diag.env.DISCORD_CLIENT_ID, true);
+  assert.ok(diag.guildId);
+});

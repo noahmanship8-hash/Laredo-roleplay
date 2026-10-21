@@ -1953,6 +1953,12 @@ window.LAREDO_CONFIG = {
         if (badge) badge.hidden = false;
         if (signature === lastSignature) return;
         lastSignature = signature;
+        // skip posts that would render as an empty card (a ping with nothing after it)
+        posts = posts.filter(function (post) {
+          return (post.content && post.content.trim()) ||
+            (post.embeds && post.embeds.length) ||
+            (post.components && post.components.length);
+        });
         if (!posts.length) {
           setFeedMessage('No announcements yet. Check back soon, or open our Discord.');
           return;

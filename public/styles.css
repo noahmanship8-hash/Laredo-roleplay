@@ -9,7 +9,7 @@ body{margin:0;background:#0B1220}
 .t-halloween{--bg:#0F0A1C;--surface:#181030;--surface2:#21173F;--line:rgba(206,186,255,.2);--text:#EFE8F6;--sub:#CFC3E0;--muted:#A294BD;--title:#FFF0DE;--accent:#FF7A1A;--accent-ink:#0F0A1C;--gold:#FF9A3D;--link:#FFA64D;--ok:#7BD99E;--warn:#FFA64D;--bad:#F27F8A;--glass-a:rgba(190,150,255,.14);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(206,186,255,.22);--glass-hi:rgba(226,208,255,.24);--shadow:rgba(5,0,15,.5);--blur:16px;--hill1:#22174A;--hill2:#150D30;--road:#FF7A1A;--bat:#7A5CC8;--orb1:rgba(139,92,246,.34);--orb2:rgba(255,122,26,.22);--orb3:rgba(255,70,140,.15);--header:#130C24;--band:#170F2C;--rule-soft:rgba(206,186,255,.10);--rule:rgba(206,186,255,.14);--rule-2:rgba(206,186,255,.22);--rule-3:rgba(206,186,255,.4);--flat:rgba(206,186,255,.035)}
 .t-christmas{--bg:#07131A;--surface:#0D2230;--surface2:#123142;--line:rgba(196,226,245,.16);--text:#E6F0F7;--sub:#B7CAD8;--muted:#8CA5B6;--title:#FFFFFF;--accent:#E9B44C;--accent-ink:#081420;--gold:#F2CE7B;--link:#F2CE7B;--ok:#63D6A4;--warn:#F2CE7B;--bad:#F07C74;--glass-a:rgba(190,225,255,.085);--glass-b:rgba(255,255,255,.026);--glass-line:rgba(196,226,245,.17);--glass-hi:rgba(232,246,255,.22);--shadow:rgba(0,8,16,.5);--blur:16px;--sun1:#F2CE7B;--sun2:#DCA85B;--sun3:#C77F3F;--sun4:#8A5A3E;--sun5:#5E4038;--hill1:#12384A;--hill2:#08202C;--road:#E9B44C;--pine:#1E5C46;--orb1:rgba(96,180,255,.20);--orb2:rgba(233,180,76,.16);--orb3:rgba(30,92,70,.36);--header:#071A24;--band:#0A2230;--rule-soft:rgba(196,226,245,.10);--rule:rgba(196,226,245,.14);--rule-2:rgba(196,226,245,.22);--rule-3:rgba(196,226,245,.4);--flat:rgba(196,226,245,.04)}
 
-.root{position:relative;background:var(--bg);color:var(--text);font:400 18px/1.55 'Barlow',system-ui,sans-serif;min-height:100vh;transition:background-color .35s ease,color .35s ease}
+.root{position:relative;background:var(--bg);color:var(--text);font:400 18px/1.55 'Barlow',system-ui,sans-serif;min-height:100vh;min-height:100dvh;transition:background-color .35s ease,color .35s ease}
 a{color:var(--link)}
 a:hover{text-decoration-thickness:2px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
@@ -1282,3 +1282,180 @@ main,.site-footer{position:relative;z-index:2}
 .t-light .hero .link-arrow{color:#F4EFE4}
 .t-light .hero-carousel{background:#FBFAF6;border-color:rgba(20,18,14,.10);
   box-shadow:0 24px 60px rgba(0,0,0,.42)}
+
+/* ======================================================================
+   v8: phones and tablets
+   The desktop layout is untouched above; everything here only narrows or
+   re-stacks what is already there. Ordered widest first so the small-screen
+   rules win.
+   ====================================================================== */
+
+/* nothing may push the page sideways; long words and links wrap instead */
+.root{overflow-x:clip}
+.wrap{padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
+/* taps register immediately instead of waiting for a double-tap zoom */
+a,button,summary,[role="button"],.chip,.look-btn,.quick,.settings-link{touch-action:manipulation}
+
+@media (max-width:900px){
+  /* a phone-width tab row that scrolls instead of wrapping into four lines */
+  .dash-nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;padding-bottom:0}
+  .dash-nav::-webkit-scrollbar{display:none}
+  .dash-nav a{flex:none;scroll-snap-align:start;white-space:nowrap}
+
+  /* the dashboard's own grids */
+  .dstats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .inv-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+
+  /* filters and toolbar rows stack rather than squeeze */
+  .filters{flex-wrap:wrap;gap:10px}
+  .filters select,.filters input{min-width:0;width:100%;flex:1 1 100%}
+  .panel-tools{flex-wrap:wrap;gap:8px}
+  .panel-tools input[type=text]{max-width:none;width:100%}
+}
+
+@media (max-width:820px){
+  /* the band reads as a two-by-two board instead of one tall column */
+  .facts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .facts-grid>div{min-height:0;padding:16px 18px 17px}
+  /* cell text lines up with the page edge on both sides of each row */
+  .facts-grid>div:nth-child(odd){padding-left:0}
+  .facts-grid>div:nth-child(even){padding-right:0}
+  .fact{font-size:clamp(26px,7vw,34px)}
+  .fact-sm{font-size:16px;max-width:none}
+  .facts-grid .kicker{font-size:10px;letter-spacing:.18em}
+  .fact-of{font-size:10px;letter-spacing:.14em}
+
+  /* header: brand and tools on one line, the menu button on the right */
+  .site-header .bar{gap:10px 12px;padding-top:10px;padding-bottom:10px}
+  .brand{font-size:17px;gap:8px;min-width:0}
+  .brand img{width:30px;height:30px}
+  .brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .menu-btn{margin-left:auto;min-height:42px;padding:0 12px;font-size:13px;letter-spacing:.08em}
+  .tools{order:3;width:100%;gap:8px;flex-wrap:wrap}
+  .tools>*{min-width:0}
+  .look-btn,.settings-link,.quick{min-height:42px}
+  .nav{order:4}
+  .nav a{font-size:20px;padding:13px 0}
+  /* a long Discord name never widens the header */
+  .account{min-width:0;max-width:100%}
+  .account span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:34vw}
+
+  .look-pop{right:auto;left:0;width:min(300px,calc(100vw - 24px));max-height:min(70vh,420px)}
+
+  /* sections breathe less */
+  .sec{padding:clamp(34px,8vw,54px) 0}
+  .invite-in{padding-top:40px;padding-bottom:40px;gap:20px}
+  .foot{padding:28px 0;gap:18px}
+  /* the home-indicator strip at the bottom of a phone */
+  .site-footer{padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+}
+
+@media (max-width:620px){
+  .wrap{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+
+  /* type scale: the desktop clamp floors are too big for a 375px screen */
+  .display{font-size:clamp(32px,9vw,44px);line-height:1.06;margin:14px 0 16px}
+  .display-sm{font-size:clamp(28px,7.5vw,38px)}
+  .h1{font-size:clamp(28px,7.5vw,36px)}
+  .h2{font-size:clamp(23px,5.6vw,30px)}
+  .h3{font-size:clamp(18px,4.6vw,22px)}
+
+  /* hero */
+  .hero{padding:clamp(26px,7vw,40px) 0 clamp(26px,6vw,36px)}
+  .hero .display{font-size:clamp(34px,10.5vw,46px);line-height:1.05;margin:14px 0 14px;max-width:none}
+  .hero .lede{font-size:17.5px;line-height:1.5}
+  .hero .intro{font-size:15px;line-height:1.6;margin-top:14px}
+  .hero .cta{margin-top:20px;gap:8px}
+  .hero .cta .btn{flex:1 1 100%}
+  .hero .shift{margin-top:16px;gap:4px 10px;font-size:14px}
+  .shift-label{display:block;font-size:9.5px;letter-spacing:.18em;margin-bottom:2px}
+  .rot{display:block;width:100%;font-size:16px}
+
+  /* the carousel card */
+  .hero-carousel{padding:14px 15px 0;border-radius:12px}
+  .hc-window{padding:18px 0 16px;min-height:0}
+  .hc-t{font-size:clamp(21px,6vw,26px)}
+  .hc-p{font-size:14px;line-height:1.55;margin-bottom:16px}
+  .hc-foot{padding:10px 0 12px}
+  /* arrows and dots keep a comfortable thumb target while looking small */
+  .hc-arrow{width:38px;height:38px;border-radius:9px;font-size:18px}
+  .hc-dots{gap:2px}
+  .hc-dots button{position:relative;width:26px;height:26px;background:none}
+  .hc-dots button::before{content:'';position:absolute;left:9px;right:9px;top:50%;height:6px;margin-top:-3px;
+    border-radius:999px;background:var(--rule-2);transition:background-color .2s ease,left .25s ease,right .25s ease}
+  .hc-dots button.is-on{width:26px;background:none}
+  .hc-dots button.is-on::before{left:5px;right:5px;background:var(--gold)}
+  .hc-link{min-height:42px;padding:0 14px;display:inline-flex;align-items:center}
+
+  /* cards and lists */
+  .panel,.card,.setting-card{border-radius:12px}
+  .panel{padding:18px}
+  .card{padding:18px !important}
+  .feed .card{padding:16px !important}
+  .steps li{padding:15px 16px}
+  .platform li{padding:16px}
+  .row{padding:18px 16px;border-radius:14px}
+  .row h2{font-size:24px}
+  .row-n{font-size:13px}
+  .row-status,.row-action{grid-column:1/-1}
+  .row-action .btn{width:100%}
+  .page-head{padding:28px 0 20px}
+  .page-head .h1{font-size:clamp(28px,7.5vw,36px)}
+
+  /* announcements */
+  .msg{font-size:16px;line-height:1.6}
+  .msg-h{font-size:22px}
+  .msg-embed{padding:13px 14px 13px 16px}
+  .v2-container{padding:13px 14px;gap:10px}
+  .embed-image,.v2-gallery img{max-height:300px}
+  .msg-components{gap:8px}
+
+  /* forms: 16px inputs stop iOS from zooming in on focus */
+  input[type=text],input[type=number],select,textarea{font-size:16px;padding:12px}
+  .setting{padding:14px 0}
+  .setting h3{font-size:17px}
+  .settings-wrap{gap:16px}
+  .seg{width:100%}
+  .seg button{flex:1 1 auto;min-height:42px;padding:0 12px}
+
+  /* dashboard */
+  .pg-dash .dash-title,.pg-panel .dash-title{font-size:clamp(24px,7vw,30px)}
+  .dstats,.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .inv-grid{grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+  .dash-signin{margin:24px auto;padding:22px 18px}
+  .dash-signin h2{font-size:24px}
+  .server-num b{font-size:38px}
+  .team-preview{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+
+  /* the overlays */
+  .intro-card,.boot-in{padding:24px 20px;border-radius:14px}
+  .intro-logo,.boot-logo{width:64px;height:64px;border-radius:18px}
+  .intro-logo img,.boot-logo img{width:42px;height:42px}
+  .maint-box{padding:0 8px}
+}
+
+@media (max-width:400px){
+  .wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  .hero .display{font-size:clamp(30px,11vw,38px)}
+  .fact{font-size:26px}
+  .hc-arrow{width:34px;height:34px}
+  .brand{font-size:15px}
+  .menu-btn{padding:0 10px}
+  .facts-grid>div{padding:13px 12px 14px}
+}
+
+/* landscape phones: less padding, the card keeps its own height */
+@media (max-width:900px) and (orientation:landscape) and (max-height:520px){
+  .hero{padding-top:18px;padding-bottom:18px}
+  .hc-window{padding:14px 0 12px}
+}
+
+/* the moving background is the most expensive thing on screen; keep it cheap on phones */
+@media (hover:none) and (pointer:coarse){
+  .orb{filter:blur(60px);opacity:.45}
+  .aurora{filter:blur(60px)}
+  .cursor-glow{display:none}
+  .grain{opacity:.25}
+}

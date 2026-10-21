@@ -1497,6 +1497,112 @@ a,button,summary,[role="button"],.chip,.look-btn,.quick,.settings-link{touch-act
   .grain{opacity:.25}
 }
 
+/* ======================================================================
+   v9: the carousel, and the last of the phone polish
+   ====================================================================== */
+
+/* ---------- the carousel: one stage, crossfaded slides ----------
+   Every slide used to be display:none until it was current, so the card was as tall as
+   whichever slide was showing: the card, and everything under it, jumped every 7 seconds.
+   All slides now share a single grid cell, so the card is as tall as its longest slide and
+   the slides fade across it instead of resizing it. */
+.hc-window{display:grid;align-items:start}
+.hc-window>.hero-slide{grid-area:1/1;display:block;min-width:0;margin:0;
+  opacity:0;visibility:hidden;transform:translateY(6px);pointer-events:none;
+  transition:opacity .38s ease,transform .38s cubic-bezier(.2,.8,.2,1),visibility .38s}
+.hc-window>.hero-slide.is-on{opacity:1;visibility:visible;transform:none;pointer-events:auto;
+  position:relative;z-index:1;animation:none}
+/* the stage owns horizontal swipes, the page keeps vertical scrolling */
+.hc-window{touch-action:pan-y}
+/* steadier numbers in the head and footer while the count changes */
+.hc-count,.hc-n{font-variant-numeric:tabular-nums}
+/* Pause/Play must not resize the footer when the label swaps */
+.hc-pause{min-width:64px;justify-content:center}
+
+@media (max-width:960px){
+  .hero-grid{grid-template-columns:minmax(0,1fr)}
+  /* on a phone the card belongs under the copy, with room to breathe above it */
+  .hero-grid>.hero-copy{order:1}
+  .hero-grid>.hero-carousel{order:2;margin-top:8px;width:100%}
+}
+
+@media (max-width:820px){
+  /* full-bleed bars get the same gutter as the page, so their text never meets the edge */
+  .notice,.maint-staff{padding-left:max(18px,env(safe-area-inset-left))}
+  .notice{padding-right:max(18px,env(safe-area-inset-right))}
+  .maint-staff{padding-right:max(18px,env(safe-area-inset-right))}
+
+  /* nothing may push sideways out of its column */
+  .hero-copy,.facts-grid,.sec,.invite-in,.foot,.dash-wrap,.settings-wrap,.staff-wrap,
+  .two-col>*,.steps li,.platform li,.row-main,.dcard,.setting{min-width:0}
+  .display,.h1,.h2,.hero .lede,.intro,.muted,.msg,.msg-h,.fact-sm,.hc-p,.hc-t,.hc-meta,
+  .row h2,.member-name,.member-bio,.foot-links a,.fine,.ban,.chip,.stamp,.account span,
+  .look-pop button span,.setting p,.rules li,.alert,.v2-text{overflow-wrap:anywhere}
+  .display,.h1,.h2,.hc-t{text-wrap:balance}
+}
+
+@media (max-width:620px){
+  html{-webkit-tap-highlight-color:transparent}
+  /* the card is a little roomier inside, matching the page gutter */
+  .hero-carousel{padding:16px 18px 0;border-radius:14px}
+  .hc-window{min-height:198px}
+  .hc-head{gap:10px}
+  .hc-head .kicker{font-size:10px;letter-spacing:.16em}
+  .hc-p{font-size:14.5px}
+  /* keep the rotation stoppable on a phone (it is the only control that pauses it) */
+  .hc-pause{display:inline-flex;align-items:center;justify-content:center;flex:none;
+    min-height:36px;padding:0 10px;font-size:11px;letter-spacing:.02em}
+  /* the controls share one row and never wrap onto a second line */
+  .hc-foot{flex-wrap:nowrap;gap:8px}
+  .hc-arrow{flex:none}
+  .hc-dots{flex:0 1 auto;min-width:0;overflow:hidden}
+
+  /* a touch more room at the sides for the widest bits of the home page */
+  .facts-grid>div{padding:15px 16px 16px}
+  .facts-grid>div:nth-child(odd){padding-left:0}
+  .facts-grid>div:nth-child(even){padding-right:0}
+  .steps li,.platform li{padding:16px 17px}
+  .invite-in{padding-left:0;padding-right:0}
+  .foot-links{gap:10px 16px;font-size:15px}
+  .foot-appearance{gap:10px 14px}
+}
+
+/* ---------- phone polish, part two ---------- */
+@media (max-width:820px){
+  /* the brand and the menu stay reachable while the page scrolls.
+     overflow-x is clip (not hidden) on .root, so this still sticks to the viewport. */
+  .site-header{position:sticky;top:0}
+  html{scroll-padding-top:76px}
+  .nav a{font-size:19px}
+  /* a little press feedback, since phones have no hover */
+  .btn:active,.btn-line:active,.hc-link:active,.look-btn:active,.settings-link:active,
+  .quick:active,.chip:active,.hero a:active{opacity:.82}
+  .kicker{letter-spacing:.16em}
+}
+
+@media (max-width:430px){
+  /* the three appearance buttons stack into two rows instead of squeezing */
+  .foot-appearance{align-items:stretch}
+  .foot-appearance .label{width:100%}
+  .foot-appearance .seg{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .foot-appearance .seg button{min-height:40px;padding:0 10px;font-size:13.5px}
+  .foot-appearance .seg button:first-child{grid-column:1/-1}
+  .quick{flex:1 1 auto;justify-content:space-between}
+  .hc-arrow{width:34px;height:34px}
+  .hc-pause{min-height:34px;padding:0 9px;font-size:10.5px}
+  .hc-dots button,.hc-dots button.is-on{width:22px;height:24px}
+  .hc-dots button::before{left:7px;right:7px}
+  .hc-dots button.is-on::before{left:4px;right:4px}
+}
+
+@media (max-width:360px){
+  /* the narrowest phones: every carousel control still sits on one line */
+  .hero-carousel{padding-left:15px;padding-right:15px}
+  .hc-pause{padding:0 8px;font-size:10px}
+  .hc-arrow{width:32px;height:32px}
+  .hc-dots button,.hc-dots button.is-on{width:20px}
+}
+
 </style>
 <style>
 .pv-chip{position:fixed;left:16px;bottom:16px;z-index:120;display:flex;align-items:center;gap:10px;
@@ -3631,8 +3737,21 @@ window.LAREDO_CONFIG = {
     var bar = document.getElementById('crs-bar');
     if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
   }
+  /* The card only rotates while someone can actually see it: rotating off-screen burns
+     battery and hands the visitor a different slide to the one they came back for. */
+  var crsVisible = true, crsSeen = false;
+  function watchCarousel() {
+    var card = document.getElementById('hero-media');
+    if (crsSeen || !card || typeof IntersectionObserver !== 'function') return;
+    crsSeen = true;
+    new IntersectionObserver(function (entries) {
+      crsVisible = Boolean(entries[0] && entries[0].isIntersecting);
+    }, { threshold: 0.2 }).observe(card);
+  }
+
   function restartCarousel() {
     if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; }
+    watchCarousel();
     var stage = document.getElementById('hero-slides');
     var wrap = document.getElementById('hero-media');
     if (!stage) return;
@@ -3645,7 +3764,10 @@ window.LAREDO_CONFIG = {
       pause.setAttribute('aria-label', crsPaused ? 'Resume automatic slide rotation' : 'Pause automatic slide rotation');
     }
     if (!auto) return;
-    crsTimer = setInterval(function () { goSlide(crsIndex + 1); }, 7000);
+    crsTimer = setInterval(function () {
+      if (!crsVisible || document.hidden) return;
+      goSlide(crsIndex + 1);
+    }, 7000);
   }
 
   /* ----------------------------------------------------------- look menu */
@@ -3797,6 +3919,25 @@ window.LAREDO_CONFIG = {
         if (e.key === 'ArrowRight') { goSlide(crsIndex + 1); restartCarousel(); }
         if (e.key === 'ArrowLeft') { goSlide(crsIndex - 1); restartCarousel(); }
       });
+      // a sideways swipe on the card turns the page; a mostly-vertical drag is a scroll,
+      // so it falls through to the browser untouched
+      var startX = null, startY = null;
+      stage.addEventListener('touchstart', function (e) {
+        if (e.touches.length !== 1) { startX = null; return; }
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchend', function (e) {
+        if (startX === null) return;
+        var touch = e.changedTouches[0];
+        var dx = touch.clientX - startX;
+        var dy = touch.clientY - startY;
+        startX = null;
+        startY = null;
+        if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        goSlide(crsIndex + (dx < 0 ? 1 : -1));
+        restartCarousel();
+      }, { passive: true });
     }
     goSlide(0);
     restartCarousel();

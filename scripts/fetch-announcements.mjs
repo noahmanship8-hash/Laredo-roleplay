@@ -108,9 +108,17 @@ async function main() {
 
   const messages = await api(`/channels/${CHANNEL}/messages?limit=${Math.min(LIMIT * 3, 100)}`);
 
+  // A ping-only post (a role mention, then the real post below it) is not an announcement.
+  // Anything that is just mentions and punctuation counts as empty text.
+  const hasText = (value) => Boolean(String(value || '')
+    .replace(/<@[!&]?\d+>/g, '')
+    .replace(/@(everyone|here)/g, '')
+    .replace(/[\s.,!?\-–—]/g, '')
+    .trim());
+
   const announcements = messages
-    // Keep messages with embeds even when they have no regular message text.
-    .filter((m) => (m.content && m.content.trim()) || (m.embeds && m.embeds.length) || (m.components && m.components.length))
+    // Keep messages with parts even when they have no regular message text.
+    .filter((m) => hasText(m.content) || (m.embeds && m.embeds.length) || (m.components && m.components.length))
     .slice(0, LIMIT)
     .map((m) => ({
       id: m.id,
@@ -148,7 +156,7 @@ async function main() {
 
   const output = { updated: new Date().toISOString(), guildId, channelId: CHANNEL, announcements };
   await writeFile(OUT, JSON.stringify(output, null, 2) + '\n', 'utf8');
-  console.log(`Saved ${announcements.length} announcements.`);
+  console.log(`Saved ${announcements.length} announcements to public/announcements.json.`);
 }
 
 main().catch((err) => {

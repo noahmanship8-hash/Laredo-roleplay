@@ -1753,8 +1753,21 @@
     var bar = document.getElementById('crs-bar');
     if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
   }
+  /* The card only rotates while someone can actually see it: rotating off-screen burns
+     battery and hands the visitor a different slide to the one they came back for. */
+  var crsVisible = true, crsSeen = false;
+  function watchCarousel() {
+    var card = document.getElementById('hero-media');
+    if (crsSeen || !card || typeof IntersectionObserver !== 'function') return;
+    crsSeen = true;
+    new IntersectionObserver(function (entries) {
+      crsVisible = Boolean(entries[0] && entries[0].isIntersecting);
+    }, { threshold: 0.2 }).observe(card);
+  }
+
   function restartCarousel() {
     if (crsTimer) { clearInterval(crsTimer); crsTimer = 0; }
+    watchCarousel();
     var stage = document.getElementById('hero-slides');
     var wrap = document.getElementById('hero-media');
     if (!stage) return;
@@ -1767,7 +1780,10 @@
       pause.setAttribute('aria-label', crsPaused ? 'Resume automatic slide rotation' : 'Pause automatic slide rotation');
     }
     if (!auto) return;
-    crsTimer = setInterval(function () { goSlide(crsIndex + 1); }, 7000);
+    crsTimer = setInterval(function () {
+      if (!crsVisible || document.hidden) return;
+      goSlide(crsIndex + 1);
+    }, 7000);
   }
 
   /* ----------------------------------------------------------- look menu */
@@ -1919,6 +1935,25 @@
         if (e.key === 'ArrowRight') { goSlide(crsIndex + 1); restartCarousel(); }
         if (e.key === 'ArrowLeft') { goSlide(crsIndex - 1); restartCarousel(); }
       });
+      // a sideways swipe on the card turns the page; a mostly-vertical drag is a scroll,
+      // so it falls through to the browser untouched
+      var startX = null, startY = null;
+      stage.addEventListener('touchstart', function (e) {
+        if (e.touches.length !== 1) { startX = null; return; }
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchend', function (e) {
+        if (startX === null) return;
+        var touch = e.changedTouches[0];
+        var dx = touch.clientX - startX;
+        var dy = touch.clientY - startY;
+        startX = null;
+        startY = null;
+        if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        goSlide(crsIndex + (dx < 0 ? 1 : -1));
+        restartCarousel();
+      }, { passive: true });
     }
     goSlide(0);
     restartCarousel();

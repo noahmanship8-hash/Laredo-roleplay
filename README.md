@@ -54,6 +54,7 @@ In your Pages project open **Settings > Variables and Secrets** and add these. U
 
 | Name | Value |
 | --- | --- |
+| `SITE_URL` | Your real address, e.g. `https://laredo-roleplay.pages.dev`. Sign in always sends people back here, which is what makes the Discord redirect check pass even if they arrived from a preview link or a www address. Recommended. |
 | `SESSION_SECRET` | A long random string of 40 characters or more. A password generator works. |
 | `DISCORD_CLIENT_ID` | From Part 4 |
 | `DISCORD_CLIENT_SECRET` | From Part 4 |
@@ -65,6 +66,14 @@ In your Pages project open **Settings > Variables and Secrets** and add these. U
 | `ERLC_API_BASE` | Only if ER:LC changes its address again. Defaults to `https://api.erlc.gg/v1`. |
 
 Cloudflare only picks up new variables and bindings on a new deployment. Open **Deployments**, find the latest one and choose **Retry deployment**, or push any small change to GitHub.
+
+### "Invalid OAuth2 redirect_uri" when signing in
+
+Discord only accepts a redirect address that is written on the app exactly. Open `SITE ADDRESS/api/auth/discord/diagnostic` in a browser. It shows the address the site is sending (`discordRedirectUri`), the client ID it is using, and whether the secret is set. Compare:
+
+1. **The address.** `discordRedirectUri` must appear word for word under **OAuth2 > Redirects** in the Discord developer portal, with `https://`, no `www.` and no trailing slash. If you have `SITE_URL` set, sign in always uses that address.
+2. **The client ID.** `clientId` must be from the same Discord application that holds the redirect. Two applications (one for the bot, one for the site) is the usual mistake.
+3. **The right host.** Open the site on the address in `SITE_URL`, not a preview link like `https://abc123.laredo-roleplay.pages.dev`. Preview addresses change with every deployment and cannot be registered.
 
 ## Part 6: Roblox linking (optional, you can do it later)
 

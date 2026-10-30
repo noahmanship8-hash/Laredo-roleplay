@@ -1,8 +1,23 @@
 {
-  "updated": "2026-10-30T18:15:30.161Z",
+  "updated": "2026-10-30T22:18:58.178Z",
   "guildId": "1554210300377563226",
   "channelId": "1554214242432065598",
   "announcements": [
+    {
+      "id": "1565849771262873711",
+      "timestamp": "2026-10-30T22:07:57.551000+00:00",
+      "edited": true,
+      "author": {
+        "name": "Dogebuddies24",
+        "avatar": "https://cdn.discordapp.com/avatars/1361205032682262648/6cad060953ec2cc62a733ce9aded33d9.png?size=64"
+      },
+      "content": "(*CC:**\n@LRCP | Executive Team @LCRP | Leadership Team @LCRP | Verified Member  \n\n( THIS IS ONLY A SUGGETSION 4 CHECKMARKS TO PUSH THIS INTO NOTICE) WEEKLY SSU SCHEDULE\n\nPlease note that all scheduled SSUs are based on UK time (GMT/BST). Leadership+ members are permitted to host one additional SSU per week. This is to ensure consistent activity and give the community more opportunities to participate.\nDay    SSU Time (UK)\nMonday    18:00\nTuesday    19:00\nWednesday    17:00\nThursday    16:00\nFriday    19:00\nSaturday    13:00\nSunday    13:00\n\nIMPORTANT: If any of the scheduled SSUs fail to take place, Noah and Remco have permission to attempt hosting one additional SSU to make up for it.\n\nThank you for keeping our community active!\n\n*REACT IF YOU WANT THIS**",
+      "embeds": [],
+      "components": [],
+      "componentsV2": false,
+      "attachments": 0,
+      "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1565849771262873711"
+    },
     {
       "id": "1562442875734724719",
       "timestamp": "2026-10-21T12:30:10.360000+00:00",

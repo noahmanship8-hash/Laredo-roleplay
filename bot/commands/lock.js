@@ -1,0 +1,2 @@
+const { make, user, page } = require('../utils/command-factory');
+module.exports = make('lock', 'Lock • Laredo staff tools', b => { b.addChannelOption(o => o.setName('channel').setDescription('Channel to lock')); b.addIntegerOption(o => o.setName('minutes').setDescription('Optional automatic unlock, in minutes').setMinValue(1).setMaxValue(40320)); }, i => require('../utils/tools').execute(i, 'lock'));

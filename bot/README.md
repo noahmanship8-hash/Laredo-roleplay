@@ -104,3 +104,38 @@ Settings persist in your existing database and apply only to this server. Catego
 The bot requires View Channel, Send Messages and Embed Links in each log channel; **View Audit Log** is needed for audit events. Enable **Server Members Intent** and **Message Content Intent** in the Developer Portal. The updated startup also requests Voice States and message partials. Keep destinations staff-only: logs can expose deleted/private-channel messages. Existing `config.channels.modLogs` is separate from these event-log destinations.
 
 Limits: no historical backfill, no recovery of uncached deleted content, no guaranteed actor attribution outside audit entries, no logging while the bot is offline, no delivery retry queue. Attachment-only edits, reactions, presence and every possible Discord setting are not tracked. Large changes are summarized/truncated; member counts reflect the event-time cache. If bot permissions are revoked, use `/logging status` and check the hosting console for delivery failures.
+
+## Auto-roles and community tools
+
+Administrator setup examples:
+
+```
+/autorole add role:@Community target:humans stage:join
+/autorole add role:@Bots target:bots stage:join
+/autorole add role:@Community target:humans stage:verified
+/autorole list
+/autorole toggle enabled:false
+/autorole remove role_id:123456789012345678
+/selfrole allow role:@Session-Notifications
+/selfrole disallow role_id:123456789012345678
+```
+
+`autorole` setup and self-role allow/disallow require an administrator with Manage Roles. The bot needs Manage Roles and a role above every offered role. Up to 20 auto-role rules and 20 self-service roles are supported per server. Adding the same auto-role/target changes its stage rather than duplicating it. Settings persist in the database.
+
+Auto-roles apply to **future joins or verification**, not all existing members. With verification enabled, human join roles wait until successful verification too, to avoid granting access before verification. Verified-stage rules do nothing if verification is disabled. Bots use join rules only. Rules are checked again at assignment: deleted, privileged, managed, staff, ticket-support and verification roles are skipped. Assignment failures appear in the host console; after verification the member is told if an optional auto-role failed. There is no retry queue or offline/backfill assignment.
+
+Members can use:
+
+```
+/selfrole list
+/selfrole join role:@Session-Notifications
+/selfrole leave role:@Session-Notifications
+/avatar
+/avatar user:@Member
+```
+
+Members can only add/remove **their own approved optional roles**; unverified members cannot join optional roles while verification is enabled. Disallowing or removing a rule does not strip existing member roles. Review role channel overwrites before approving a role: optional roles can intentionally grant channel access even when they have no administrator/moderation permission bits. These tools reject privileged permission bits but cannot determine your intended private-channel access policy.
+
+Staff with Manage Channels can use `/slowmode seconds:10 channel:#general` or set `seconds:0` to disable. Cooldowns range from 0 to 21600 seconds (6 hours); both staff and bot need Manage Channels in the target channel. Threads are not supported by this command. Discord moderators may be exempt from slowmode.
+
+The role tools are disabled in practice until roles are configured: no role is automatically selected, and no existing member roles are changed by installation. No extra npm dependencies are required.

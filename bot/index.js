@@ -63,6 +63,7 @@ client.once(Events.ClientReady, (c) => {
 });
 
 require('./utils/server-logs').install(client);
+require('./utils/community').install(client);
 client.on(Events.InteractionCreate, onInteraction);
 
 // DM ban appeals: !appeal <case number> <reason>

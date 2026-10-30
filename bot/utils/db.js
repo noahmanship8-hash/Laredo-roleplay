@@ -10,6 +10,7 @@ const defaults = () => ({
   notes: [],
   locks: {},
   logging: {},
+  community: {},
   cases: [],
   tickets: {},
   suggestions: {},

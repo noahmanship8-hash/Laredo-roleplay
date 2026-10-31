@@ -1,8 +1,23 @@
 {
-  "updated": "2026-10-31T10:59:22.194Z",
+  "updated": "2026-10-31T11:29:54.889Z",
   "guildId": "1554210300377563226",
   "channelId": "1554214242432065598",
   "announcements": [
+    {
+      "id": "1566048820289208382",
+      "timestamp": "2026-10-31T11:18:54.537000+00:00",
+      "edited": false,
+      "author": {
+        "name": "Dogebuddies24",
+        "avatar": "https://cdn.discordapp.com/avatars/1361205032682262648/6cad060953ec2cc62a733ce9aded33d9.png?size=64"
+      },
+      "content": "@everyone https://discord.gg/6jn4mdhtv \n\nNEW BAN APPEAL SERVER !",
+      "embeds": [],
+      "components": [],
+      "componentsV2": false,
+      "attachments": 0,
+      "url": "https://discord.com/channels/1554210300377563226/1554214242432065598/1566048820289208382"
+    },
     {
       "id": "1566025752032575540",
       "timestamp": "2026-10-31T09:47:14.636000+00:00",
